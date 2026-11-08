@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDGoC ITB Super App — Team Workspace</title>
+    <title>GDGoC ITB Super App — AENHAT Workspace</title>
     <!-- Tailwind CSS dengan Dark Mode Class -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -18,7 +18,7 @@
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans pb-16 transition-colors duration-200">
 
     <!-- ========================================== -->
-    <!-- LAYAR KUNCI PASSWORD (ONNOKANAERU)         -->
+    <!-- 1. LAYAR LOGIN 3 ANGGOTA (AUTO-USER)       -->
     <!-- ========================================== -->
     <div id="auth-overlay" class="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
@@ -26,21 +26,50 @@
                 🔐
             </div>
             <div>
-                <h1 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">Akses Tim AENHAT</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Masukkan kode akses untuk membuka workspace GDGoC ITB Challenge.</p>
+                <h1 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">Portal Tim AENHAT</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Masukkan password pribadimu untuk masuk otomatis sesuai identitas & peranmu.</p>
             </div>
-            <form onsubmit="checkPassword(event)" class="space-y-3">
-                <input type="password" id="password-input" placeholder="Masukkan password..." class="w-full text-center text-sm px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
-                <p id="auth-error" class="text-xs text-rose-500 font-medium hidden">Password salah! Coba lagi.</p>
+            <form onsubmit="handleLogin(event)" class="space-y-3">
+                <input type="password" id="password-input" placeholder="Ketik password pribadimu..." class="w-full text-center text-sm px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <p id="auth-error" class="text-xs text-rose-500 font-medium hidden">Password tidak dikenali! Cek kembali passwordmu.</p>
                 <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow transition">
-                    Buka Workspace
+                    Masuk ke Workspace
                 </button>
             </form>
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- HEADER UTAMA STICKY                        -->
+    <!-- 2. MODAL KONFIRMASI + JEDA 2 DETIK         -->
+    <!-- ========================================== -->
+    <div id="confirm-modal" class="fixed inset-0 z-[90] bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 text-lg">
+                    ⚠️
+                </div>
+                <div class="space-y-1">
+                    <h3 id="confirm-title" class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">Konfirmasi Perubahan</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Pastikan data sudah benar sebelum disimpan ke database & riwayat tim:</p>
+                </div>
+            </div>
+
+            <div id="confirm-details" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5 text-slate-700 dark:text-slate-300">
+            </div>
+
+            <div class="flex gap-2 pt-1">
+                <button type="button" onclick="closeConfirmModal()" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition">
+                    Batal
+                </button>
+                <button type="button" id="confirm-action-btn" disabled class="flex-1 py-2.5 px-4 rounded-xl bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-500 font-semibold text-xs cursor-not-allowed transition">
+                    ⏳ Tunggu 2 detik...
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. HEADER UTAMA STICKY                     -->
     <!-- ========================================== -->
     <header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
         <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
@@ -52,440 +81,13 @@
                 <p class="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">Case 1: Smarter Campus • Preliminary: 10 Nov 2026</p>
             </div>
             
-            <div class="flex items-center gap-1.5">
-                <!-- Dark Mode Toggle -->
+            <div class="flex items-center gap-2">
+                <!-- Badge User yang Sedang Login -->
+                <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-xs">
+                    <span>👤</span>
+                    <span id="header-user-name" class="font-bold text-indigo-700 dark:text-indigo-300">-</span>
+                </div>
                 <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Ganti Tema Terang/Gelap">
                     <span id="theme-icon" class="text-sm">🌙</span>
                 </button>
-                <!-- Tombol Kunci Ulang -->
-                <button onclick="lockWorkspace()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-rose-100 dark:hover:bg-rose-950 transition text-xs font-medium" title="Kunci Halaman">
-                    🔒
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- ========================================== -->
-    <!-- KONTEN UTAMA (1 HALAMAN LANGSUNG)          -->
-    <!-- ========================================== -->
-    <main id="main-workspace" class="max-w-4xl mx-auto p-4 space-y-6">
-
-        <!-- 1. IDENTITAS PENGGUNA AKTIF -->
-        <section class="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/70 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div class="text-xs">
-                <span class="font-bold text-indigo-950 dark:text-indigo-200">👤 Siapa yang sedang membuka web ini?</span>
-                <p class="text-[11px] text-indigo-700 dark:text-indigo-300">Nama ini otomatis tercatat di riwayat saat kamu klik tombol Submit.</p>
-            </div>
-            <input type="text" id="active-user" oninput="saveActiveUser()" placeholder="Ketik namamu (misal: Eral)..." class="text-xs px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none sm:w-64">
-        </section>
-
-        <!-- 2. PEMBAGIAN 3 PERAN TIM -->
-        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div>
-                <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">1. Pembagian Peran Tim (3 Anggota)</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Silakan 2 teman memilih peran yang diinginkan terlebih dahulu. Peran ke-3 yang tersisa otomatis diambil oleh <b>Eral Shabya Dewantara</b>.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <!-- Peran A -->
-                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                    <div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">Peran A • Architecture</span>
-                        <h3 class="font-bold text-sm mt-2 text-slate-900 dark:text-white">Lead System, API & Security</h3>
-                        <ul class="text-[11px] text-slate-600 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
-                            <li>Skema API SIAKAD & Zero-Knowledge Grade Proof</li>
-                            <li>Arsitektur Closed-Loop & Zero-Touch Lab Container</li>
-                            <li>Setup repositori & struktur teknis MVP</li>
-                        </ul>
-                    </div>
-                    <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <label class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Diambil Oleh:</label>
-                        <input type="text" id="role-a-name" placeholder="Ketik nama anggota..." class="w-full mt-1 text-xs p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
-                    </div>
-                </div>
-
-                <!-- Peran B -->
-                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                    <div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">Peran B • Product & UI/UX</span>
-                        <h3 class="font-bold text-sm mt-2 text-slate-900 dark:text-white">Pitch Deck & UI/UX Designer</h3>
-                        <ul class="text-[11px] text-slate-600 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
-                            <li>Storyline Pitch Deck (Deadline 10 Nov)</li>
-                            <li>Desain Wireframe / Mockup Figma Super App</li>
-                            <li>Visualisasi alur mahasiswa & dashboard dosen</li>
-                        </ul>
-                    </div>
-                    <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <label class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Diambil Oleh:</label>
-                        <input type="text" id="role-b-name" placeholder="Ketik nama anggota..." class="w-full mt-1 text-xs p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
-                    </div>
-                </div>
-
-                <!-- Peran C -->
-                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                    <div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">Peran C • AI & Logic</span>
-                        <h3 class="font-bold text-sm mt-2 text-slate-900 dark:text-white">Matchmaking, RAG & Marketplace</h3>
-                        <ul class="text-[11px] text-slate-600 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
-                            <li>Logika Vector-Graph Team Matchmaking & KRS</li>
-                            <li>Konsep RAG Verified Forum & Peer-Tutoring</li>
-                            <li>Alur Contextual KRS Marketplace & NIM Escrow</li>
-                        </ul>
-                    </div>
-                    <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <label class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Diambil Oleh:</label>
-                        <input type="text" id="role-c-name" placeholder="Ketik nama anggota..." class="w-full mt-1 text-xs p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-col sm:flex-row gap-2 pt-1">
-                <button onclick="autoAssignRemainingRole()" class="flex-1 py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 transition">
-                    ⚡ Isi Otomatis Peran Sisa untuk Eral
-                </button>
-                <button onclick="saveRolesToFirebase()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-semibold shadow hover:bg-indigo-700 transition">
-                    💾 Submit Pembagian Peran
-                </button>
-            </div>
-        </section>
-
-        <!-- 3. CHECKPOINT ALUR & TUGAS -->
-        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div>
-                <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">2. Checkpoint Alur & Keterangan Tugas</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pilih status (<b>Belum</b>, <b>Sedang Dikerjakan</b>, <b>Sudah</b>, <b>Revisi</b>), tulis detail yang dikerjakan di bawahnya, lalu tekan <b>Submit Update</b>.</p>
-            </div>
-
-            <div id="checkpoint-list" class="space-y-4"></div>
-        </section>
-
-        <!-- 4. RIWAYAT SUBMIT (HISTORY LOG REALTIME) -->
-        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-            <div>
-                <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">3. Riwayat Submit & Progres Anggota (History Log)</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Rekaman otomatis setiap perubahan status dan catatan tugas yang di-submit oleh tim.</p>
-            </div>
-
-            <div id="history-list" class="space-y-2 max-h-80 overflow-y-auto pr-1 text-xs">
-                <p class="text-slate-400 italic text-xs">Memuat riwayat dari Firebase...</p>
-            </div>
-        </section>
-
-        <!-- 5. RANCANGAN 10 FITUR SUPER APP (MUST-HAVE & SHOULD-HAVE) -->
-        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                    <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">4. Blueprint 10 Fitur Super App (Closed-Loop)</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Ketuk fitur untuk melihat detail arsitektur, nilai bintang, serta pembagian Must-Have & Should-Have.</p>
-                </div>
-                <div class="flex gap-1.5">
-                    <button onclick="renderFeatures('all')" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-medium">Semua (10)</button>
-                    <button onclick="renderFeatures('MUST-HAVE')" class="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-medium">Must-Have</button>
-                    <button onclick="renderFeatures('SHOULD-HAVE')" class="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-medium">Should-Have</button>
-                </div>
-            </div>
-
-            <div id="features-container" class="space-y-2 pt-2"></div>
-        </section>
-
-    </main>
-
-    <script>
-        // ==========================================
-        // 1. SISTEM PASSWORD (OnnoKanaeru)
-        // ==========================================
-        const ACCESS_PASS = "OnnoKanaeru";
-
-        function initAuth() {
-            const unlocked = localStorage.getItem('aenhat_unlocked');
-            if (unlocked === ACCESS_PASS) {
-                document.getElementById('auth-overlay').classList.add('hidden');
-            }
-        }
-
-        function checkPassword(e) {
-            e.preventDefault();
-            const input = document.getElementById('password-input').value.trim();
-            const err = document.getElementById('auth-error');
-            if (input === ACCESS_PASS) {
-                localStorage.setItem('aenhat_unlocked', ACCESS_PASS);
-                document.getElementById('auth-overlay').classList.add('hidden');
-                err.classList.add('hidden');
-            } else {
-                err.classList.remove('hidden');
-            }
-        }
-
-        function lockWorkspace() {
-            localStorage.removeItem('aenhat_unlocked');
-            document.getElementById('password-input').value = '';
-            document.getElementById('auth-overlay').classList.remove('hidden');
-        }
-
-        // ==========================================
-        // 2. KONFIGURASI FIREBASE REALTIME DATABASE
-        // ==========================================
-        const firebaseConfig = {
-            databaseURL: "https://campus-superapp-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        // Data 10 Fitur Super App
-        const featuresData = [
-            { id: 1, title: "Zero-Knowledge Grade Proof", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Validasi kriptografi API SIAKAD agar mahasiswa bisa membuktikan klaim seperti 'IPK > 3.5' atau 'Lulus Matkul Jaringan A' tanpa membuka angka transkrip asli." },
-            { id: 2, title: "Dynamic Skill-Tree & Auto-SKPI", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Nilai API kampus dan sertifikat lomba yang disetujui staf otomatis membentuk grafik skill di profil sekaligus merekap poin SKPI kelulusan." },
-            { id: 3, title: "Automated Repo & Portfolio Auditor", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Integrasi GitHub yang memindai repositori mahasiswa untuk memberi lencana validasi keahlian teknis nyata di luar nilai akademik." },
-            { id: 4, title: "Vector-Graph Team Matchmaking", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Pencari rekan tim lomba/proyek berdasarkan kecocokan Skill-Tree yang saling melengkapi dan irisan jam kosong jadwal KRS." },
-            { id: 5, title: "RAG-Powered Verified Academic Forum", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Forum diskusi kuliah di mana jawaban peraih nilai A diprioritaskan di atas, didukung AI RAG yang menjawab dari arsip diskusi kakak tingkat." },
-            { id: 6, title: "Micro-Bounty & Peer Tutoring", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Pertanyaan tugas/debugging yang buntu bisa dipasangi imbalan (bounty) dan menotifikasi peraih nilai A untuk sesi tutor singkat." },
-            { id: 7, title: "Contextual KRS Marketplace", stars: "⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Pasar jual-beli & sewa alat praktikum yang membaca KRS semester baru untuk menawarkan buku/mikrokontroler bekas dari kakak tingkat." },
-            { id: 8, title: "NIM-Bound Smart Escrow", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Rekening bersama & jaminan sewa alat antar mahasiswa yang terikat ke NIM aktif untuk mencegah penipuan internal." },
-            { id: 9, title: "Zero-Touch Lab & Server Provisioning", stars: "⭐⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Peminjaman ruang lab atau container server praktikum yang begitu disetujui satu klik oleh staf langsung menerbitkan akses otomatis." },
-            { id: 10, title: "Instant Talent Radar (Dashboard Dosen)", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Panel khusus dosen dan kepala lab untuk merekrut asisten praktikum atau riset dari filter nilai API dan reputasi forum." }
-        ];
-
-        // Data Default 5 Checkpoint Alur
-        const defaultCheckpoints = {
-            cp1: { title: "1. Klaim 3 Peran Tim & Sinkronisasi Ide", owner: "Semua Anggota (3 Orang)", status: "Sedang Dikerjakan", note: "Pilih peran masing-masing di bagian atas halaman ini." },
-            cp2: { title: "2. Perancangan Arsitektur API SIAKAD & Closed-Loop", owner: "Peran A (Architecture)", status: "Belum", note: "Buat diagram alur data dari API Kampus -> Skill Badge -> Matchmaking -> Escrow & Lab." },
-            cp3: { title: "3. Penyusunan Storyline & Slide Pitch Deck (Deadline 10 Nov)", owner: "Peran B (Product/UI)", status: "Belum", note: "Susun deck Preliminary Submission: Problem, Solution, 10 Fitur Closed-Loop, & MoSCoW." },
-            cp4: { title: "4. Desain Mockup UI/UX & Alur Matchmaking/RAG", owner: "Peran B & Peran C", status: "Belum", note: "Siapkan tampilan antarmuka utama untuk dimasukkan ke Pitch Deck dan persiapan Semifinal." },
-            cp5: { title: "5. Eksekusi Prototipe MVP Semifinal (Deadline 30 Nov)", owner: "Semua Anggota (3 Orang)", status: "Belum", note: "Implementasi fitur Must-Have dan video demo produk." }
-        };
-
-        let currentCheckpoints = JSON.parse(JSON.stringify(defaultCheckpoints));
-
-        // ==========================================
-        // 3. TEMA GELAP/TERANG & NAMA PENGGUNA
-        // ==========================================
-        function initLocalPreferences() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            if (savedTheme === 'dark') {
-                document.documentElement.classList.add('dark');
-                document.getElementById('theme-icon').innerText = '☀️';
-            }
-            const savedUser = localStorage.getItem('activeUser') || '';
-            document.getElementById('active-user').value = savedUser;
-        }
-
-        function toggleDarkMode() {
-            const html = document.documentElement;
-            const isDark = html.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            document.getElementById('theme-icon').innerText = isDark ? '☀️' : '🌙';
-        }
-
-        function saveActiveUser() {
-            const val = document.getElementById('active-user').value.trim();
-            localStorage.setItem('activeUser', val);
-        }
-
-        function getActiveUser() {
-            return document.getElementById('active-user').value.trim() || "Anggota Tim";
-        }
-
-        // ==========================================
-        // 4. RENDER FITUR & CHECKPOINT
-        // ==========================================
-        function renderFeatures(filter = 'all') {
-            const container = document.getElementById('features-container');
-            container.innerHTML = '';
-            featuresData
-                .filter(f => filter === 'all' || f.priority === filter)
-                .forEach(f => {
-                    const badgeClass = f.priority === 'MUST-HAVE'
-                        ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
-                        : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300';
-                    container.innerHTML += `
-                        <details class="group bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-                            <summary class="font-semibold text-xs sm:text-sm cursor-pointer flex justify-between items-center gap-2">
-                                <span>${f.id}. ${f.title} <span class="text-[11px] font-normal">${f.stars}</span></span>
-                                <span class="text-[10px] px-2 py-0.5 rounded font-bold shrink-0 ${badgeClass}">${f.priority}</span>
-                            </summary>
-                            <p class="text-xs text-slate-600 dark:text-slate-300 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 leading-relaxed">
-                                ${f.desc}
-                            </p>
-                        </details>
-                    `;
-                });
-        }
-
-        function getStatusColor(status) {
-            switch(status) {
-                case 'Sudah': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 border-emerald-300';
-                case 'Sedang Dikerjakan': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300';
-                case 'Revisi': return 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300 border-rose-300';
-                default: return 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300';
-            }
-        }
-
-        function renderCheckpoints() {
-            const container = document.getElementById('checkpoint-list');
-            container.innerHTML = '';
-            Object.keys(defaultCheckpoints).forEach(key => {
-                const cp = currentCheckpoints[key] || defaultCheckpoints[key];
-                const badgeColor = getStatusColor(cp.status);
-                const lastBy = cp.updatedBy ? `Terakhir di-submit oleh <b>${cp.updatedBy}</b> (${cp.updatedAt || '-'})` : 'Belum ada submit baru';
-
-                container.innerHTML += `
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2.5">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div>
-                                <span class="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400">${cp.owner}</span>
-                                <h3 class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">${cp.title}</h3>
-                            </div>
-                            <select id="${key}-status" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border outline-none ${badgeColor}">
-                                <option value="Belum" ${cp.status === 'Belum' ? 'selected' : ''}>⏳ Belum</option>
-                                <option value="Sedang Dikerjakan" ${cp.status === 'Sedang Dikerjakan' ? 'selected' : ''}>🔨 Sedang Dikerjakan</option>
-                                <option value="Sudah" ${cp.status === 'Sudah' ? 'selected' : ''}>✅ Sudah</option>
-                                <option value="Revisi" ${cp.status === 'Revisi' ? 'selected' : ''}>⚠️ Revisi</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Keterangan Progres / Link Hasil Kerja / Detail Revisi:</label>
-                            <textarea id="${key}-note" rows="2" class="w-full text-xs p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Tulis apa yang dikerjakan, kendala, atau tempel link Figma/GitHub/Docs...">${cp.note || ''}</textarea>
-                        </div>
-
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-                            <span class="text-[10px] text-slate-500 dark:text-slate-400">${lastBy}</span>
-                            <button onclick="submitCheckpoint('${key}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
-                                🚀 Submit Update & Catat History
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // ==========================================
-        // 5. SINKRONISASI FIREBASE & HISTORY LOG
-        // ==========================================
-        const syncBadge = document.getElementById('sync-badge');
-        db.ref('.info/connected').on('value', (snap) => {
-            if (snap.val() === true) {
-                syncBadge.innerText = "🟢 Realtime Sync Aktif";
-                syncBadge.className = "text-[10px] px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-full font-medium";
-            } else {
-                syncBadge.innerText = "🔴 Offline";
-                syncBadge.className = "text-[10px] px-2 py-0.5 bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 rounded-full font-medium";
-            }
-        });
-
-        function formatTimestamp() {
-            const now = new Date();
-            return now.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-        }
-
-        function submitCheckpoint(key) {
-            const user = getActiveUser();
-            const newStatus = document.getElementById(`${key}-status`).value;
-            const newNote = document.getElementById(`${key}-note`).value.trim();
-            const prevStatus = (currentCheckpoints[key] && currentCheckpoints[key].status) || 'Belum';
-            const title = defaultCheckpoints[key].title;
-            const timeStr = formatTimestamp();
-
-            const updatedObj = {
-                title: title,
-                owner: defaultCheckpoints[key].owner,
-                status: newStatus,
-                note: newNote,
-                updatedBy: user,
-                updatedAt: timeStr
-            };
-
-            db.ref(`superapp_project/checkpoints/${key}`).set(updatedObj);
-            db.ref('superapp_project/history').push({
-                user: user,
-                taskTitle: title,
-                fromStatus: prevStatus,
-                toStatus: newStatus,
-                note: newNote,
-                timestamp: timeStr
-            });
-        }
-
-        function autoAssignRemainingRole() {
-            const rA = document.getElementById('role-a-name').value.trim();
-            const rB = document.getElementById('role-b-name').value.trim();
-            const rC = document.getElementById('role-c-name').value.trim();
-
-            if (rA && rB && !rC) document.getElementById('role-c-name').value = "Eral Shabya Dewantara";
-            else if (rA && !rB && rC) document.getElementById('role-b-name').value = "Eral Shabya Dewantara";
-            else if (!rA && rB && rC) document.getElementById('role-a-name').value = "Eral Shabya Dewantara";
-            else {
-                alert("Pastikan 2 peran sudah diisi oleh temanmu terlebih dahulu, baru klik tombol ini agar peran terakhir otomatis diisi untuk Eral!");
-                return;
-            }
-            saveRolesToFirebase();
-        }
-
-        function saveRolesToFirebase() {
-            const user = getActiveUser();
-            const rA = document.getElementById('role-a-name').value.trim();
-            const rB = document.getElementById('role-b-name').value.trim();
-            const rC = document.getElementById('role-c-name').value.trim();
-            const timeStr = formatTimestamp();
-
-            db.ref('superapp_project/roles').set({ roleA: rA, roleB: rB, roleC: rC, updatedBy: user, updatedAt: timeStr });
-            db.ref('superapp_project/history').push({
-                user: user,
-                taskTitle: "Pembaruan Pembagian 3 Peran Tim",
-                fromStatus: "Peran",
-                toStatus: "Disimpan",
-                note: `Peran A: ${rA || '-'} | Peran B: ${rB || '-'} | Peran C: ${rC || '-'}`,
-                timestamp: timeStr
-            });
-        }
-
-        db.ref('superapp_project/roles').on('value', (snap) => {
-            const data = snap.val();
-            if (data) {
-                document.getElementById('role-a-name').value = data.roleA || '';
-                document.getElementById('role-b-name').value = data.roleB || '';
-                document.getElementById('role-c-name').value = data.roleC || '';
-            }
-        });
-
-        db.ref('superapp_project/checkpoints').on('value', (snap) => {
-            const data = snap.val();
-            if (data) {
-                Object.keys(defaultCheckpoints).forEach(k => {
-                    if (data[k]) currentCheckpoints[k] = data[k];
-                });
-            }
-            renderCheckpoints();
-        });
-
-        db.ref('superapp_project/history').limitToLast(30).on('value', (snap) => {
-            const data = snap.val();
-            const container = document.getElementById('history-list');
-            if (!data) {
-                container.innerHTML = '<p class="text-slate-400 italic text-xs">Belum ada riwayat submit...</p>';
-                return;
-            }
-            const items = Object.values(data).reverse();
-            container.innerHTML = items.map(item => `
-                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold text-indigo-600 dark:text-indigo-400">${item.user}</span>
-                        <span class="text-[10px] text-slate-400">${item.timestamp}</span>
-                    </div>
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">${item.taskTitle}</p>
-                    <p class="text-[11px] text-slate-600 dark:text-slate-300">
-                        Status: <span class="line-through opacity-70">${item.fromStatus}</span> ➔ <b>${item.toStatus}</b>
-                    </p>
-                    ${item.note ? `<p class="text-[11px] italic text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800">"${item.note}"</p>` : ''}
-                </div>
-            `).join('');
-        });
-
-        // Jalankan saat halaman dibuka
-        initAuth();
-        initLocalPreferences();
-        renderFeatures('all');
-        renderCheckpoints();
-    </script>
-</body>
-</html>
+                <button onclick="logoutWorkspace()" class="px-2.5 py-1.5 rounded-lg bg-rose
