@@ -127,6 +127,7 @@
             <div>
                 <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">3. Riwayat Submit & Progres Anggota (Realtime Log)</h2>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Rekaman permanen setiap kali Awal, Naufal, atau Eral melakukan submit perubahan tugas.</p>
+                <button type="button" onclick="copyAllHistory()" class="mt-2 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition">📋 Copy Semua History (per tugas) untuk AI</button>
             </div>
             <div id="history-list" class="space-y-2 max-h-80 overflow-y-auto pr-1 text-xs">
                 <p class="text-slate-400 italic text-xs">Memuat riwayat dari Firebase...</p>
@@ -516,6 +517,136 @@
                 </div>`;
         }
 
+        // ==========================================
+        // 6b. HISTORY PER TUGAS + COPY UNTUK AI LAIN
+        // ==========================================
+        function copyText(text, okMsg) {
+            const fallback = () => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); alert(okMsg); }
+                catch (e) { window.prompt('Salin manual (Ctrl+C):', text); }
+                document.body.removeChild(ta);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => alert(okMsg)).catch(fallback);
+            } else {
+                fallback();
+            }
+        }
+
+        function taskHistoryItems(key) {
+            const title = defaultCheckpoints[key].title;
+            // currentHistory sudah urut terbaru -> terlama; data lama tanpa taskKey dicocokkan lewat judul
+            return currentHistory.filter(h => h.taskKey === key || (!h.taskKey && h.taskTitle === title));
+        }
+
+        function historyBodyHtml(key) {
+            const items = taskHistoryItems(key);
+            if (!items.length) return '<p class="text-slate-400 italic">Belum ada submit untuk tugas ini.</p>';
+            return items.map(h => `
+                <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-0.5">
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="font-bold text-indigo-600 dark:text-indigo-400">${esc(h.user)}</span>
+                        <span class="text-[10px] text-slate-400">${esc(h.timestamp)}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 dark:text-slate-300">
+                        <span class="line-through opacity-70">${esc(h.fromStatus)}</span> ➔ <b>${esc(h.toStatus)}</b>
+                    </p>
+                    ${h.note ? `<p class="text-[11px] italic text-slate-500 dark:text-slate-400">"${esc(h.note)}"</p>` : ''}
+                </div>`).join('');
+        }
+
+        function refreshTaskHistories() {
+            Object.keys(defaultCheckpoints).forEach(key => {
+                const body = document.getElementById(`${key}-hist-body`);
+                const cnt = document.getElementById(`${key}-hist-count`);
+                if (body) body.innerHTML = historyBodyHtml(key);
+                if (cnt) cnt.innerText = taskHistoryItems(key).length;
+            });
+        }
+
+        function toggleHist(key) {
+            ui[key] = ui[key] || {};
+            ui[key].hist = !ui[key].hist;
+            const panel = document.getElementById(`${key}-hist`);
+            const arrow = document.getElementById(`${key}-hist-arrow`);
+            if (panel) panel.style.display = ui[key].hist ? 'block' : 'none';
+            if (arrow) arrow.innerText = ui[key].hist ? '▲' : '▼';
+        }
+
+        function renderTaskHistoryHtml(key) {
+            const st = ui[key] || {};
+            return `
+                <div class="space-y-2">
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="toggleHist('${key}')" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            🕘 History Tugas (<span id="${key}-hist-count">${taskHistoryItems(key).length}</span>) <span id="${key}-hist-arrow">${st.hist ? '▲' : '▼'}</span>
+                        </button>
+                        <button type="button" onclick="copyTaskHistory('${key}')" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition">
+                            📋 Copy History untuk AI
+                        </button>
+                    </div>
+                    <div id="${key}-hist" style="display:${st.hist ? 'block' : 'none'}" class="p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 text-xs">
+                        <div id="${key}-hist-body" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">${historyBodyHtml(key)}</div>
+                    </div>
+                </div>`;
+        }
+
+        function buildTaskHistoryText(key, withInstruction) {
+            const base = defaultCheckpoints[key];
+            const cp = currentCheckpoints[key] || base;
+            const items = taskHistoryItems(key);
+            const lock = checkTaskLock(key);
+            const g = taskGuides[key];
+
+            const lines = [
+                `RIWAYAT PROGRES TUGAS — Tim Mekara (GDGoC ITB, Case 1: Smarter Campus and Learning)`,
+                `Judul: ${base.title}`,
+                `PIC: ${base.owner}`,
+                `State saat ini: ${cp.status}${lock.locked ? ` (TERKUNCI: menunggu ${lock.missingTitles.join(' & ')})` : ''}`,
+                `Teks/catatan terkini: ${cp.note || '-'}`,
+                `Update terakhir: ${cp.updatedBy ? `${cp.updatedBy} (${cp.updatedAt || '-'})` : 'belum ada submit'}`,
+                ``,
+                `Riwayat submit (terbaru → terlama), total ${items.length}:`
+            ];
+
+            if (!items.length) {
+                lines.push('- Belum ada riwayat submit.');
+            } else {
+                items.forEach((h, i) => {
+                    lines.push(`${i + 1}. [${h.timestamp}] ${h.user} — ${h.fromStatus} => ${h.toStatus}`);
+                    lines.push(`   Teks: ${h.note || '-'}`);
+                });
+            }
+
+            if (withInstruction) {
+                if (g) {
+                    lines.push('', `Acuan tata cara (urutan langkah):`);
+                    g.steps.forEach((s, i) => lines.push(`${i + 1}. ${s.t}`));
+                    lines.push(`Output yang diharapkan: ${g.output}`);
+                }
+                lines.push('', `Mohon cek progres tugas ini: (1) langkah mana yang sudah tercermin dari riwayat, (2) apa yang masih kurang dibanding tata cara dan output, (3) apakah status "${cp.status}" sudah layak, (4) langkah konkret berikutnya.`);
+            }
+            return lines.join('\n');
+        }
+
+        function copyTaskHistory(key) {
+            copyText(buildTaskHistoryText(key, true), 'History tugas berhasil disalin! Silakan paste ke AI lain.');
+        }
+
+        function copyAllHistory() {
+            const body = Object.keys(defaultCheckpoints)
+                .map(k => buildTaskHistoryText(k, false))
+                .join('\n\n--------------------\n\n');
+            const tail = `\n\nMohon cek progres seluruh tugas di atas: tunjukkan bottleneck, tugas yang status/isinya belum konsisten, dan prioritas kerja berikutnya untuk tiap anggota.`;
+            copyText(body + tail, 'Seluruh history tugas berhasil disalin! Silakan paste ke AI lain.');
+        }
+
         function renderCheckpoints() {
             const container = document.getElementById('checkpoint-list');
             let html = '';
@@ -577,6 +708,8 @@
                         </div>
 
                         ${renderGuideHtml(key)}
+
+                        ${renderTaskHistoryHtml(key)}
 
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
                             <span class="text-[10px] text-slate-500 dark:text-slate-400">${lastBy}</span>
@@ -658,6 +791,7 @@
                 });
                 db.ref('superapp_project/history').push({
                     user: user,
+                    taskKey: key,
                     taskTitle: title,
                     fromStatus: prevStatus,
                     toStatus: newStatus,
@@ -795,16 +929,7 @@ ATURAN JAWABAN
         }
 
         function copyAIPrompt() {
-            const el = document.getElementById('ai-prompt-output');
-            el.select();
-            const done = () => alert("Prompt konteks terkini berhasil disalin! Silakan paste ke AI kamu.");
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(el.value).then(done).catch(() => {
-                    try { document.execCommand('copy'); done(); } catch (e) { alert("Gagal menyalin otomatis. Teks sudah terpilih, tekan Ctrl+C / salin manual."); }
-                });
-            } else {
-                try { document.execCommand('copy'); done(); } catch (e) { alert("Gagal menyalin otomatis. Teks sudah terpilih, tekan Ctrl+C / salin manual."); }
-            }
+            copyText(document.getElementById('ai-prompt-output').value, 'Prompt konteks terkini berhasil disalin! Silakan paste ke AI kamu.');
         }
 
         // ==========================================
@@ -854,12 +979,13 @@ ATURAN JAWABAN
                 updateAIPrompt();
             });
 
-            db.ref('superapp_project/history').limitToLast(30).on('value', (snap) => {
+            db.ref('superapp_project/history').limitToLast(300).on('value', (snap) => {
                 const data = snap.val();
                 const container = document.getElementById('history-list');
                 currentHistory = [];
                 if (!data) {
                     container.innerHTML = '<p class="text-slate-400 italic text-xs">Belum ada riwayat submit...</p>';
+                    refreshTaskHistories();
                     updateAIPrompt();
                     return;
                 }
@@ -878,6 +1004,7 @@ ATURAN JAWABAN
                         ${item.note ? `<p class="text-[11px] italic text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800">"${esc(item.note)}"</p>` : ''}
                     </div>
                 `).join('');
+                refreshTaskHistories();
                 updateAIPrompt();
             });
         }
