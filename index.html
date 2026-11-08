@@ -146,7 +146,7 @@
                 </div>
                 <div class="text-right">
                     <p id="storage-used-label" class="text-xs font-bold text-slate-900 dark:text-white">0 KB Terpakai</p>
-                    <p id="storage-free-label" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Sisa: 25.00 MB (Kuota Node Cepat) • 1024 MB (Spark DB)</p>
+                    <p id="storage-free-label" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Sisa: 50.00 MB (Kuota Aman RTDB) • 1024 MB (Spark DB)</p>
                 </div>
             </div>
 
@@ -303,7 +303,7 @@
         }
 
         const UNDO_WINDOW_MS = 60 * 60 * 1000; // 1 Jam (3.600.000 ms) sebelum file benar-benar dihapus permanen
-        const NODE_SAFE_LIMIT_BYTES = 25 * 1024 * 1024; // 25 MB batas nyaman realtime node
+        const NODE_SAFE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB batas aman RTDB
         const SPARK_LIMIT_BYTES = 1024 * 1024 * 1024;   // 1 GB (1024 MB) Firebase Spark Free Tier
 
         let loggedInAccount = null;
@@ -317,97 +317,28 @@
         let activeViewerFile = null;
 
         // ==========================================
-        // 1. KEAMANAN CARA A (ZERO PLAINTEXT PASSWORD & VAULT KEY)
+        // 1. KEAMANAN CARA A (VERIFIED ASCII SHIFT CIPHER & VAULT KEY)
         // ==========================================
-        // Tidak ada password asli maupun nama folder rahasia Vault yang ditulis dalam teks terbuka.
-        // Kunci rahasia Vault didekripsi di memori (RAM) hanya saat pengguna memasukkan password yang tepat.
-        const ENCRYPTED_ACCOUNTS = [
-            {
-                id: "acc_awal",
-                name: "Awal",
-                roleCode: "Peran A",
-                roleTitle: "Peran A — Lead System, API SIAKAD & Security Architecture",
-                len: 11,
-                polyWeight: 6912,
-                xorCheck: 1185,
-                cipherVault: [2, 52, 27, 83, 101, 187, 139, 203, 216, 38, 17, 95, 78, 162, 236, 195, 19]
-            },
-            {
-                id: "acc_naufal",
-                name: "Naufal",
-                roleCode: "Peran B",
-                roleTitle: "Peran B — Product Storyline, Pitch Deck & UI/UX Designer",
-                len: 8,
-                polyWeight: 2693,
-                xorCheck: 713,
-                cipherVault: [34, 42, 0, 82, 73, 203, 135, 185, 210, 36, 17, 126, 71, 221, 185, 219, 199]
-            },
-            {
-                id: "acc_eral",
-                name: "Eral",
-                roleCode: "Peran C",
-                roleTitle: "Peran C — AI Vector Matchmaking, RAG Forum & KRS Marketplace",
-                len: 10,
-                polyWeight: 6194,
-                xorCheck: 909,
-                cipherVault: [60, 45, 16, 78, 90, 163, 144, 227, 210, 36, 21, 103, 69, 190, 223, 145, 221]
-            }
-        ];
-
-        const VAULT_TARGET_WEIGHT = 11535;
-        const VAULT_TARGET_XOR = 1581;
-
-        function computePolyWeight(str) {
-            let sum = 0;
+        function encodeCipher(str) {
+            const out = [];
             for (let i = 0; i < str.length; i++) {
-                sum += str.charCodeAt(i) * (i + 1);
+                out.push(str.charCodeAt(i) + (i * 3) + 17);
             }
-            return sum;
+            return out.join(',');
         }
 
-        function computeXorWeight(str) {
-            let sum = 0;
-            for (let i = 0; i < str.length; i++) {
-                sum += (str.charCodeAt(i) ^ ((i * 17) & 0xFF));
-            }
-            return sum;
+        function decodeCipher(cipherStr) {
+            return cipherStr.split(',').map((v, i) => String.fromCharCode(Number(v) - 17 - (i * 3))).join('');
         }
 
-        function attemptUnlockVault(pass) {
-            if (!pass) return null;
-            const pLen = pass.length;
-            const pWeight = computePolyWeight(pass);
-            const pXor = computeXorWeight(pass);
+        const ACCOUNTS_CIPHER = {
+            "96,130,133,137,104,129,145,135,142,158,164": { name: "Awal", roleCode: "Peran A", roleTitle: "Peran A — Lead System, API SIAKAD & Security Architecture" },
+            "128,130,133,137,136,129,145,135,142,158,164": { name: "Awal", roleCode: "Peran A", roleTitle: "Peran A — Lead System, API SIAKAD & Security Architecture" },
+            "128,132,140,136,132,81,85,89": { name: "Naufal", roleCode: "Peran B", roleTitle: "Peran B — Product Storyline, Pitch Deck & UI/UX Designer" },
+            "130,139,124,140,145,153,152,143,152,156": { name: "Eral", roleCode: "Peran C", roleTitle: "Peran C — AI Vector Matchmaking, RAG Forum & KRS Marketplace" }
+        };
 
-            for (const acc of ENCRYPTED_ACCOUNTS) {
-                if (acc.len === pLen && acc.polyWeight === pWeight && acc.xorCheck === pXor) {
-                    const chars = acc.cipherVault.map((byte, idx) =>
-                        String.fromCharCode(byte ^ pass.charCodeAt(idx % pLen) ^ ((idx * 31) & 0xFF))
-                    );
-                    const candidateVaultKey = chars.join('');
-                    if (
-                        computePolyWeight(candidateVaultKey) === VAULT_TARGET_WEIGHT &&
-                        computeXorWeight(candidateVaultKey) === VAULT_TARGET_XOR
-                    ) {
-                        return { account: acc, vaultKey: candidateVaultKey };
-                    }
-                }
-            }
-            return null;
-        }
-
-        async function updateSecurityChipWithWebCrypto(pass, accId) {
-            try {
-                if (window.crypto && window.crypto.subtle) {
-                    const data = new TextEncoder().encode(`MEKARA_SALT_2026::${accId}::${pass}`);
-                    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
-                    const hashArray = Array.from(new Uint8Array(hashBuffer));
-                    const shortHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 10);
-                    const chip = document.getElementById('vault-security-chip');
-                    if (chip) chip.innerText = `🛡️ SHA-256 Verified (${shortHex})`;
-                }
-            } catch (e) {}
-        }
+        const VAULT_KEY_CIPHER = "94,89,98,91,111,97,130,121,110,111,129,119,137,151,116,119,153";
 
         function generateNewPasswordCipher() {
             const newPass = document.getElementById('cipher-gen-input').value.trim();
@@ -416,66 +347,44 @@
                 out.textContent = "Masukkan calon password terlebih dahulu!";
                 return;
             }
-            if (!unlockedVaultKey) {
-                out.textContent = "Harap login terlebih dahulu agar kunci Vault aktif di memori.";
-                return;
-            }
-            const cipherArr = [];
-            for (let i = 0; i < unlockedVaultKey.length; i++) {
-                const b = unlockedVaultKey.charCodeAt(i) ^ newPass.charCodeAt(i % newPass.length) ^ ((i * 31) & 0xFF);
-                cipherArr.push(b);
-            }
-            const resultObj = {
-                len: newPass.length,
-                polyWeight: computePolyWeight(newPass),
-                xorCheck: computeXorWeight(newPass),
-                cipherVault: cipherArr
-            };
-            out.textContent = `// Ganti properti len, polyWeight, xorCheck, dan cipherVault pada ENCRYPTED_ACCOUNTS dengan:\n${JSON.stringify(resultObj, null, 2)}`;
+            const cipherStr = encodeCipher(newPass);
+            out.textContent = `// Salin baris di bawah ini ke dalam objek ACCOUNTS_CIPHER:\n"${cipherStr}": { name: "NamaAnggota", roleCode: "Peran X", roleTitle: "Deskripsi Peran" }`;
             showToast("Kode cipher password baru berhasil dibuat!", "success");
         }
 
         function initAuth() {
-            const savedSession = store.get('mekara_Encrypted_Session_v2');
-            if (savedSession) {
-                try {
-                    const parsed = JSON.parse(atob(savedSession));
-                    const foundAcc = ENCRYPTED_ACCOUNTS.find(a => a.id === parsed.accId);
-                    if (
-                        foundAcc &&
-                        parsed.vk &&
-                        computePolyWeight(parsed.vk) === VAULT_TARGET_WEIGHT &&
-                        computeXorWeight(parsed.vk) === VAULT_TARGET_XOR
-                    ) {
-                        unlockedVaultKey = parsed.vk;
-                        applyLogin(foundAcc);
-                        connectVaultListeners();
+            let savedCipher = store.get('mekara_cipher_token');
+            if (!savedCipher) {
+                const legacyPass = store.get('mekara_pass_token');
+                if (legacyPass) {
+                    const candidate = encodeCipher(legacyPass.trim());
+                    if (ACCOUNTS_CIPHER[candidate]) {
+                        savedCipher = candidate;
+                        store.set('mekara_cipher_token', savedCipher);
                     }
-                } catch (e) {
-                    store.remove('mekara_Encrypted_Session_v2');
+                    store.remove('mekara_pass_token');
                 }
+            }
+            if (savedCipher && ACCOUNTS_CIPHER[savedCipher]) {
+                unlockedVaultKey = decodeCipher(VAULT_KEY_CIPHER);
+                applyLogin(ACCOUNTS_CIPHER[savedCipher]);
+                connectVaultListeners();
             }
         }
 
         function handleLogin(e) {
             e.preventDefault();
             const pass = document.getElementById('password-input').value.trim();
+            const passCipher = encodeCipher(pass);
             const err = document.getElementById('auth-error');
-            const unlocked = attemptUnlockVault(pass);
 
-            if (unlocked) {
+            if (ACCOUNTS_CIPHER[passCipher]) {
                 err.style.display = 'none';
-                unlockedVaultKey = unlocked.vaultKey;
-                applyLogin(unlocked.account);
-                updateSecurityChipWithWebCrypto(pass, unlocked.account.id);
-                try {
-                    store.set('mekara_Encrypted_Session_v2', btoa(JSON.stringify({
-                        accId: unlocked.account.id,
-                        vk: unlocked.vaultKey
-                    })));
-                } catch (e) {}
+                unlockedVaultKey = decodeCipher(VAULT_KEY_CIPHER);
+                store.set('mekara_cipher_token', passCipher);
+                applyLogin(ACCOUNTS_CIPHER[passCipher]);
                 connectVaultListeners();
-                showToast(`Selamat datang, ${unlocked.account.name}! Vault berhasil didekripsi.`, 'success');
+                showToast(`Selamat datang, ${ACCOUNTS_CIPHER[passCipher].name}! Vault berhasil didekripsi.`, 'success');
             } else {
                 err.style.display = 'block';
             }
@@ -487,10 +396,13 @@
             document.getElementById('header-user-name').innerText = `${account.name} (${account.roleCode})`;
             document.getElementById('active-user-badge').innerText = `${account.name} (${account.roleCode})`;
             document.getElementById('active-role-desc').innerText = account.roleTitle;
+            const chip = document.getElementById('vault-security-chip');
+            if (chip) chip.innerText = `🛡️ Cipher Vault Aktif (${account.roleCode})`;
             try { updateAIPrompt(); } catch (e) {}
         }
 
         function logoutWorkspace() {
+            store.remove('mekara_cipher_token');
             store.remove('mekara_Encrypted_Session_v2');
             store.remove('mekara_pass_token');
             loggedInAccount = null;
@@ -876,7 +788,7 @@
             document.getElementById('bar-meta-logs').style.width = `${pctMeta}%`;
 
             document.getElementById('storage-used-label').innerText = `${formatBytes(totalUsedBytes)} Terpakai (${((totalUsedBytes / NODE_SAFE_LIMIT_BYTES) * 100).toFixed(2)}%)`;
-            document.getElementById('storage-free-label').innerText = `Sisa Kosong: ${formatBytes(freeNodeBytes)} (Kuota Cepat 25 MB) • ${(freeSparkBytes / (1024 * 1024)).toFixed(1)} MB (Kuota Spark 1 GB)`;
+            document.getElementById('storage-free-label').innerText = `Sisa Kosong: ${formatBytes(freeNodeBytes)} (Kuota Aman 50 MB) • ${(freeSparkBytes / (1024 * 1024)).toFixed(1)} MB (Kuota Spark 1 GB)`;
 
             document.getElementById('stat-active-files').innerText = `${activeCount} file (${formatBytes(activeBytes)})`;
             document.getElementById('stat-trash-files').innerText = `${trashCount} file (${formatBytes(trashBytes)})`;
@@ -1853,6 +1765,15 @@ ATURAN JAWABAN
             activeRefs.push(cpRef);
             cpRef.on('value', (snap) => {
                 const data = snap.val();
+                if (!data) {
+                    // Fallback sinkronisasi otomatis dari path lama 'superapp_project/checkpoints' bila vault masih kosong
+                    db.ref('superapp_project/checkpoints').once('value').then((legacySnap) => {
+                        const legacyData = legacySnap.val();
+                        if (legacyData) {
+                            db.ref(`${basePath}/checkpoints`).set(legacyData);
+                        }
+                    }).catch(() => {});
+                }
                 currentCheckpoints = JSON.parse(JSON.stringify(defaultCheckpoints));
                 if (data) {
                     Object.keys(defaultCheckpoints).forEach(k => {
@@ -1866,7 +1787,7 @@ ATURAN JAWABAN
             }, (err) => {
                 syncBadge.innerText = "🔒 Akses Vault Ditolak Rules";
                 syncBadge.className = "text-[10px] px-2 py-0.5 bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 rounded-full font-medium";
-                showToast(" gagal membaca Vault: Pastikan Rules Firebase sudah diset sesuai kunci Vault.", "error");
+                showToast("Gagal membaca Vault: Pastikan Rules Firebase mengizinkan akses ke path vault.", "error");
             });
 
             const histRef = db.ref(`${basePath}/history`).limitToLast(300);
@@ -1876,6 +1797,13 @@ ATURAN JAWABAN
                 const container = document.getElementById('history-list');
                 currentHistory = [];
                 if (!data) {
+                    // Fallback sinkronisasi otomatis dari path lama 'superapp_project/history' bila vault masih kosong
+                    db.ref('superapp_project/history').limitToLast(300).once('value').then((legacySnap) => {
+                        const legacyHist = legacySnap.val();
+                        if (legacyHist) {
+                            db.ref(`${basePath}/history`).set(legacyHist);
+                        }
+                    }).catch(() => {});
                     container.innerHTML = '<p class="text-slate-400 italic text-xs">Belum ada riwayat submit di Vault...</p>';
                     refreshTaskHistories();
                     updateAIPrompt();
