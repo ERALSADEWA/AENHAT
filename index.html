@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDGoC ITB Super App — Team & AI Tracker</title>
-    <!-- Tailwind CSS dengan konfigurasi Dark Mode Class -->
+    <title>GDGoC ITB Super App — Team Workspace</title>
+    <!-- Tailwind CSS dengan Dark Mode Class -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -15,196 +15,215 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans pb-24 transition-colors duration-200">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans pb-16 transition-colors duration-200">
 
-    <!-- Header Sticky -->
-    <header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
-        <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+    <!-- ========================================== -->
+    <!-- LAYAR KUNCI PASSWORD (ONNOKANAERU)         -->
+    <!-- ========================================== -->
+    <div id="auth-overlay" class="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto text-2xl">
+                🔐
+            </div>
             <div>
-                <div class="flex items-center gap-2">
+                <h1 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">Akses Tim AENHAT</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Masukkan kode akses untuk membuka workspace GDGoC ITB Challenge.</p>
+            </div>
+            <form onsubmit="checkPassword(event)" class="space-y-3">
+                <input type="password" id="password-input" placeholder="Masukkan password..." class="w-full text-center text-sm px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <p id="auth-error" class="text-xs text-rose-500 font-medium hidden">Password salah! Coba lagi.</p>
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow transition">
+                    Buka Workspace
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- HEADER UTAMA STICKY                        -->
+    <!-- ========================================== -->
+    <header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
                     <h1 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">GDGoC ITB Super App</h1>
                     <span id="sync-badge" class="text-[10px] px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full font-medium">Menghubungkan...</span>
                 </div>
-                <p class="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">Case 1: Smarter Campus • Target Preliminary: 10 Nov 2026</p>
+                <p class="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">Case 1: Smarter Campus • Preliminary: 10 Nov 2026</p>
             </div>
             
-            <!-- Dark Mode Toggle -->
-            <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Ganti Tema">
-                <span id="theme-icon" class="text-sm">🌙</span>
-            </button>
+            <div class="flex items-center gap-1.5">
+                <!-- Dark Mode Toggle -->
+                <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Ganti Tema Terang/Gelap">
+                    <span id="theme-icon" class="text-sm">🌙</span>
+                </button>
+                <!-- Tombol Kunci Ulang -->
+                <button onclick="lockWorkspace()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-rose-100 dark:hover:bg-rose-950 transition text-xs font-medium" title="Kunci Halaman">
+                    🔒
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- Main Container (Responsif HP & Desktop) -->
-    <main class="max-w-3xl mx-auto p-4 space-y-5">
+    <!-- ========================================== -->
+    <!-- KONTEN UTAMA (1 HALAMAN LANGSUNG)          -->
+    <!-- ========================================== -->
+    <main id="main-workspace" class="max-w-4xl mx-auto p-4 space-y-6">
 
-        <!-- Identitas Pengguna Aktif (Agar History Mencatat Siapa yang Submit) -->
-        <div class="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <!-- 1. IDENTITAS PENGGUNA AKTIF -->
+        <section class="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/70 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div class="text-xs">
-                <span class="font-semibold text-indigo-950 dark:text-indigo-200">Siapa yang sedang membuka web ini?</span>
-                <p class="text-[11px] text-indigo-700 dark:text-indigo-300">Nama ini otomatis dicatat saat kamu menekan tombol Submit tugas.</p>
+                <span class="font-bold text-indigo-950 dark:text-indigo-200">👤 Siapa yang sedang membuka web ini?</span>
+                <p class="text-[11px] text-indigo-700 dark:text-indigo-300">Nama ini otomatis tercatat di riwayat saat kamu klik tombol Submit.</p>
             </div>
-            <input type="text" id="active-user" oninput="saveActiveUser()" placeholder="Ketik namamu (misal: Eral)..." class="text-xs px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none sm:w-56">
-        </div>
-
-        <!-- TAB 1: CHECKPOINT & RIWAYAT (Dibuka Pertama Agar Fokus Kerja) -->
-        <section id="tab-checkpoint" class="tab-content space-y-4">
-            <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">Checkpoint Alur & Tugas (3 Anggota)</h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Ubah status, isi progres/link di bawahnya, lalu klik <b>Submit Update</b> agar tercatat di riwayat.</p>
-                    </div>
-                </div>
-
-                <!-- Daftar Checkpoint -->
-                <div id="checkpoint-list" class="space-y-4"></div>
-            </div>
-
-            <!-- Riwayat Submit (History Log) -->
-            <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="font-bold text-sm text-slate-900 dark:text-white">Riwayat Aktivitas & Progres (Realtime Log)</h3>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Setiap kali anggota klik Submit pada tugas, catatannya terekam di sini.</p>
-                    </div>
-                </div>
-                <div id="history-list" class="space-y-2 max-h-80 overflow-y-auto pr-1 text-xs">
-                    <p class="text-slate-400 italic text-xs">Belum ada riwayat submit...</p>
-                </div>
-            </div>
+            <input type="text" id="active-user" oninput="saveActiveUser()" placeholder="Ketik namamu (misal: Eral)..." class="text-xs px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none sm:w-64">
         </section>
 
-        <!-- TAB 2: PEMBAGIAN 3 PERAN -->
-        <section id="tab-peran" class="tab-content hidden space-y-4">
-            <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                <div>
-                    <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">Pemilihan Peran Tim (3 Orang)</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Silakan 2 teman memilih peran duluan. Peran terakhir yang tersisa otomatis diambil oleh <b>Eral (Inisiator)</b>.</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <!-- Peran A -->
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">Peran A • Architecture</span>
-                            <h3 class="font-bold text-sm mt-2 text-slate-900 dark:text-white">Lead System, API & Security</h3>
-                            <ul class="text-[11px] text-slate-600 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
-                                <li>Desain skema API SIAKAD & Zero-Knowledge Grade Proof</li>
-                                <li>Arsitektur Closed-Loop & Zero-Touch Lab Container</li>
-                                <li>Setup repositori & struktur teknis MVP</li>
-                            </ul>
-                        </div>
-                        <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
-                            <label class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Diambil Oleh:</label>
-                            <input type="text" id="role-a-name" placeholder="Ketik nama..." class="w-full mt-1 text-xs p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
-                        </div>
-                    </div>
-
-                    <!-- Peran B -->
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">Peran B • Product & UI/UX</span>
-                            <h3 class="font-bold text-sm mt-2 text-slate-900 dark:text-white">Pitch Deck & UI/UX Designer</h3>
-                            <ul class="text-[11px] text-slate-600 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
-                                <li>Susun Storyline Pitch Deck (Deadline 10 Nov)</li>
-                                <li>Desain Wireframe / Mockup Figma Super App</li>
-                                <li>Visualisasi alur mahasiswa & dashboard dosen</li>
-                            </ul>
-                        </div>
-                        <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
-                            <label class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Diambil Oleh:</label>
-                            <input type="text" id="role-b-name" placeholder="Ketik nama..." class="w-full mt-1 text-xs p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
-                        </div>
-                    </div>
-
-                    <!-- Peran C -->
-                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">Peran C • AI & Logic</span>
-                            <h3 class="font-bold text-sm mt-2 text-slate-900 dark:text-white">Matchmaking, RAG & Marketplace</h3>
-                            <ul class="text-[11px] text-slate-600 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
-                                <li>Logika Vector-Graph Team Matchmaking & Jadwal KRS</li>
-                                <li>Konsep RAG Verified Forum & Peer-Tutoring</li>
-                                <li>Alur Contextual KRS Marketplace & NIM Escrow</li>
-                            </ul>
-                        </div>
-                        <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
-                            <label class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Diambil Oleh:</label>
-                            <input type="text" id="role-c-name" placeholder="Ketik nama..." class="w-full mt-1 text-xs p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-2 pt-2">
-                    <button onclick="autoAssignRemainingRole()" class="flex-1 py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 transition">
-                        ⚡ Isi Otomatis Peran Sisa untuk Eral
-                    </button>
-                    <button onclick="saveRolesToFirebase()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-lg text-xs font-semibold shadow hover:bg-indigo-700 transition">
-                        💾 Submit Pembagian Peran ke Firebase
-                    </button>
-                </div>
+        <!-- 2. PEMBAGIAN 3 PERAN TIM -->
+        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div>
+                <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">1. Pembagian Peran Tim (3 Anggota)</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Silakan 2 teman memilih peran yang diinginkan terlebih dahulu. Peran ke-3 yang tersisa otomatis diambil oleh <b>Eral Shabya Dewantara</b>.</p>
             </div>
-        </section>
 
-        <!-- TAB 3: 10 FITUR SUPER APP (Must-Have & Should-Have) -->
-        <section id="tab-fitur" class="tab-content hidden space-y-4">
-            <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- Peran A -->
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
                     <div>
-                        <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">10 Fitur Ekosistem Super App (Closed-Loop)</h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Ketuk kartu fitur untuk membaca penjelasan teknis dan alasan kenapa juri ITB akan terpukau.</p>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">Peran A • Architecture</span>
+                        <h3 class="font-bold text-sm mt-2 text-slate-900 dark:text-white">Lead System, API & Security</h3>
+                        <ul class="text-[11px] text-slate-600 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
+                            <li>Skema API SIAKAD & Zero-Knowledge Grade Proof</li>
+                            <li>Arsitektur Closed-Loop & Zero-Touch Lab Container</li>
+                            <li>Setup repositori & struktur teknis MVP</li>
+                        </ul>
                     </div>
-                    <div class="flex gap-1.5">
-                        <button onclick="filterFeatures('all')" class="text-[11px] px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 font-medium">Semua (10)</button>
-                        <button onclick="filterFeatures('MUST-HAVE')" class="text-[11px] px-2.5 py-1 rounded-md bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-medium">Must-Have</button>
-                        <button onclick="filterFeatures('SHOULD-HAVE')" class="text-[11px] px-2.5 py-1 rounded-md bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-medium">Should-Have</button>
+                    <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <label class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Diambil Oleh:</label>
+                        <input type="text" id="role-a-name" placeholder="Ketik nama anggota..." class="w-full mt-1 text-xs p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
                     </div>
                 </div>
 
-                <div id="features-container" class="space-y-2.5 pt-2"></div>
+                <!-- Peran B -->
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">Peran B • Product & UI/UX</span>
+                        <h3 class="font-bold text-sm mt-2 text-slate-900 dark:text-white">Pitch Deck & UI/UX Designer</h3>
+                        <ul class="text-[11px] text-slate-600 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
+                            <li>Storyline Pitch Deck (Deadline 10 Nov)</li>
+                            <li>Desain Wireframe / Mockup Figma Super App</li>
+                            <li>Visualisasi alur mahasiswa & dashboard dosen</li>
+                        </ul>
+                    </div>
+                    <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <label class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Diambil Oleh:</label>
+                        <input type="text" id="role-b-name" placeholder="Ketik nama anggota..." class="w-full mt-1 text-xs p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
+                    </div>
+                </div>
+
+                <!-- Peran C -->
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-3">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">Peran C • AI & Logic</span>
+                        <h3 class="font-bold text-sm mt-2 text-slate-900 dark:text-white">Matchmaking, RAG & Marketplace</h3>
+                        <ul class="text-[11px] text-slate-600 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
+                            <li>Logika Vector-Graph Team Matchmaking & KRS</li>
+                            <li>Konsep RAG Verified Forum & Peer-Tutoring</li>
+                            <li>Alur Contextual KRS Marketplace & NIM Escrow</li>
+                        </ul>
+                    </div>
+                    <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <label class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Diambil Oleh:</label>
+                        <input type="text" id="role-c-name" placeholder="Ketik nama anggota..." class="w-full mt-1 text-xs p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none">
+                    </div>
+                </div>
             </div>
-        </section>
 
-        <!-- TAB 4: AI CONTEXT BRIDGE -->
-        <section id="tab-ai" class="tab-content hidden space-y-4">
-            <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">Cross-AI Context Bridge</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Salin teks di bawah ini dan tempelkan ke AI masing-masing (Gemini, ChatGPT, Claude). Teks ini otomatis berisi <b>pembagian peran terkini, status setiap checkpoint, dan riwayat submit terakhir dari Firebase</b> sehingga semua AI langsung nyambung!
-                </p>
-
-                <textarea id="ai-prompt-output" readonly class="w-full h-64 p-3 text-[11px] font-mono rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-800 dark:text-slate-200 outline-none"></textarea>
-
-                <button onclick="copyAIPrompt()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow transition">
-                    📋 Salin Konteks Lengkap untuk AI
+            <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                <button onclick="autoAssignRemainingRole()" class="flex-1 py-2.5 px-4 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+                    ⚡ Isi Otomatis Peran Sisa untuk Eral
+                </button>
+                <button onclick="saveRolesToFirebase()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-semibold shadow hover:bg-indigo-700 transition">
+                    💾 Submit Pembagian Peran
                 </button>
             </div>
         </section>
 
-    </main>
+        <!-- 3. CHECKPOINT ALUR & TUGAS -->
+        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div>
+                <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">2. Checkpoint Alur & Keterangan Tugas</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pilih status (<b>Belum</b>, <b>Sedang Dikerjakan</b>, <b>Sudah</b>, <b>Revisi</b>), tulis detail yang dikerjakan di bawahnya, lalu tekan <b>Submit Update</b>.</p>
+            </div>
 
-    <!-- Bottom Navigation Bar -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800 z-50">
-        <div class="max-w-3xl mx-auto flex justify-around py-2">
-            <button onclick="switchTab('checkpoint', this)" class="nav-btn flex flex-col items-center text-indigo-600 dark:text-indigo-400 text-[11px] font-semibold space-y-0.5">
-                <span>☑️ Checkpoint & Log</span>
-            </button>
-            <button onclick="switchTab('peran', this)" class="nav-btn flex flex-col items-center text-slate-500 dark:text-slate-400 text-[11px] font-medium space-y-0.5">
-                <span>👥 Bagi 3 Peran</span>
-            </button>
-            <button onclick="switchTab('fitur', this)" class="nav-btn flex flex-col items-center text-slate-500 dark:text-slate-400 text-[11px] font-medium space-y-0.5">
-                <span>⭐ 10 Fitur</span>
-            </button>
-            <button onclick="switchTab('ai', this)" class="nav-btn flex flex-col items-center text-slate-500 dark:text-slate-400 text-[11px] font-medium space-y-0.5">
-                <span>🤖 Hub AI</span>
-            </button>
-        </div>
-    </nav>
+            <div id="checkpoint-list" class="space-y-4"></div>
+        </section>
+
+        <!-- 4. RIWAYAT SUBMIT (HISTORY LOG REALTIME) -->
+        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div>
+                <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">3. Riwayat Submit & Progres Anggota (History Log)</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Rekaman otomatis setiap perubahan status dan catatan tugas yang di-submit oleh tim.</p>
+            </div>
+
+            <div id="history-list" class="space-y-2 max-h-80 overflow-y-auto pr-1 text-xs">
+                <p class="text-slate-400 italic text-xs">Memuat riwayat dari Firebase...</p>
+            </div>
+        </section>
+
+        <!-- 5. RANCANGAN 10 FITUR SUPER APP (MUST-HAVE & SHOULD-HAVE) -->
+        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">4. Blueprint 10 Fitur Super App (Closed-Loop)</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Ketuk fitur untuk melihat detail arsitektur, nilai bintang, serta pembagian Must-Have & Should-Have.</p>
+                </div>
+                <div class="flex gap-1.5">
+                    <button onclick="renderFeatures('all')" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-medium">Semua (10)</button>
+                    <button onclick="renderFeatures('MUST-HAVE')" class="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-medium">Must-Have</button>
+                    <button onclick="renderFeatures('SHOULD-HAVE')" class="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-medium">Should-Have</button>
+                </div>
+            </div>
+
+            <div id="features-container" class="space-y-2 pt-2"></div>
+        </section>
+
+    </main>
 
     <script>
         // ==========================================
-        // 1. KONFIGURASI FIREBASE REALTIME DATABASE
+        // 1. SISTEM PASSWORD (OnnoKanaeru)
+        // ==========================================
+        const ACCESS_PASS = "OnnoKanaeru";
+
+        function initAuth() {
+            const unlocked = localStorage.getItem('aenhat_unlocked');
+            if (unlocked === ACCESS_PASS) {
+                document.getElementById('auth-overlay').classList.add('hidden');
+            }
+        }
+
+        function checkPassword(e) {
+            e.preventDefault();
+            const input = document.getElementById('password-input').value.trim();
+            const err = document.getElementById('auth-error');
+            if (input === ACCESS_PASS) {
+                localStorage.setItem('aenhat_unlocked', ACCESS_PASS);
+                document.getElementById('auth-overlay').classList.add('hidden');
+                err.classList.add('hidden');
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        function lockWorkspace() {
+            localStorage.removeItem('aenhat_unlocked');
+            document.getElementById('password-input').value = '';
+            document.getElementById('auth-overlay').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // 2. KONFIGURASI FIREBASE REALTIME DATABASE
         // ==========================================
         const firebaseConfig = {
             databaseURL: "https://campus-superapp-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/"
@@ -212,11 +231,11 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Data Default 10 Fitur
+        // Data 10 Fitur Super App
         const featuresData = [
-            { id: 1, title: "Zero-Knowledge Grade Proof", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Validasi kriptografi API SIAKAD agar mahasiswa bisa membuktikan klaim seperti 'IPK > 3.5' atau 'Lulus Matkul Jaringan A' tanpa membuka transkrip asli." },
-            { id: 2, title: "Dynamic Skill-Tree & Auto-SKPI", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Nilai API kampus dan sertifikat lomba yang disetujui staf otomatis membentuk grafik skill di profil sekaligus merekap poin SKPI." },
-            { id: 3, title: "Automated Repo & Portfolio Auditor", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Integrasi GitHub yang memindai repositori mahasiswa untuk memberi lencana validasi keahlian koding nyata di luar nilai akademik." },
+            { id: 1, title: "Zero-Knowledge Grade Proof", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Validasi kriptografi API SIAKAD agar mahasiswa bisa membuktikan klaim seperti 'IPK > 3.5' atau 'Lulus Matkul Jaringan A' tanpa membuka angka transkrip asli." },
+            { id: 2, title: "Dynamic Skill-Tree & Auto-SKPI", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Nilai API kampus dan sertifikat lomba yang disetujui staf otomatis membentuk grafik skill di profil sekaligus merekap poin SKPI kelulusan." },
+            { id: 3, title: "Automated Repo & Portfolio Auditor", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Integrasi GitHub yang memindai repositori mahasiswa untuk memberi lencana validasi keahlian teknis nyata di luar nilai akademik." },
             { id: 4, title: "Vector-Graph Team Matchmaking", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Pencari rekan tim lomba/proyek berdasarkan kecocokan Skill-Tree yang saling melengkapi dan irisan jam kosong jadwal KRS." },
             { id: 5, title: "RAG-Powered Verified Academic Forum", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Forum diskusi kuliah di mana jawaban peraih nilai A diprioritaskan di atas, didukung AI RAG yang menjawab dari arsip diskusi kakak tingkat." },
             { id: 6, title: "Micro-Bounty & Peer Tutoring", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Pertanyaan tugas/debugging yang buntu bisa dipasangi imbalan (bounty) dan menotifikasi peraih nilai A untuk sesi tutor singkat." },
@@ -228,19 +247,17 @@
 
         // Data Default 5 Checkpoint Alur
         const defaultCheckpoints = {
-            cp1: { title: "1. Konfirmasi Tim & Pembagian 3 Peran", owner: "Semua Anggota", status: "Sedang Dikerjakan", note: "Pastikan 3 peran di tab Peran sudah diklaim agar fokus mengerjakan bagian masing-masing." },
+            cp1: { title: "1. Klaim 3 Peran Tim & Sinkronisasi Ide", owner: "Semua Anggota (3 Orang)", status: "Sedang Dikerjakan", note: "Pilih peran masing-masing di bagian atas halaman ini." },
             cp2: { title: "2. Perancangan Arsitektur API SIAKAD & Closed-Loop", owner: "Peran A (Architecture)", status: "Belum", note: "Buat diagram alur data dari API Kampus -> Skill Badge -> Matchmaking -> Escrow & Lab." },
             cp3: { title: "3. Penyusunan Storyline & Slide Pitch Deck (Deadline 10 Nov)", owner: "Peran B (Product/UI)", status: "Belum", note: "Susun deck Preliminary Submission: Problem, Solution, 10 Fitur Closed-Loop, & MoSCoW." },
-            cp4: { title: "4. Desain Mockup UI/UX & Simulasi Matchmaking/RAG", owner: "Peran B & Peran C", status: "Belum", note: "Siapkan tampilan antarmuka utama untuk dimasukkan ke Pitch Deck dan persiapan Semifinal." },
-            cp5: { title: "5. Eksekusi Prototipe MVP Semifinal (Deadline 30 Nov)", owner: "Semua Anggota", status: "Belum", note: "Implementasi fitur Must-Have dan video demo produk." }
+            cp4: { title: "4. Desain Mockup UI/UX & Alur Matchmaking/RAG", owner: "Peran B & Peran C", status: "Belum", note: "Siapkan tampilan antarmuka utama untuk dimasukkan ke Pitch Deck dan persiapan Semifinal." },
+            cp5: { title: "5. Eksekusi Prototipe MVP Semifinal (Deadline 30 Nov)", owner: "Semua Anggota (3 Orang)", status: "Belum", note: "Implementasi fitur Must-Have dan video demo produk." }
         };
 
-        let currentRoles = { roleA: "", roleB: "", roleC: "" };
         let currentCheckpoints = JSON.parse(JSON.stringify(defaultCheckpoints));
-        let currentHistory = [];
 
         // ==========================================
-        // 2. DARK MODE & NAMA PENGGUNA LOKAL
+        // 3. TEMA GELAP/TERANG & NAMA PENGGUNA
         // ==========================================
         function initLocalPreferences() {
             const savedTheme = localStorage.getItem('theme') || 'light';
@@ -265,11 +282,11 @@
         }
 
         function getActiveUser() {
-            return document.getElementById('active-user').value.trim() || "Anggota Tim (Tanpa Nama)";
+            return document.getElementById('active-user').value.trim() || "Anggota Tim";
         }
 
         // ==========================================
-        // 3. RENDER FITUR & CHECKPOINT
+        // 4. RENDER FITUR & CHECKPOINT
         // ==========================================
         function renderFeatures(filter = 'all') {
             const container = document.getElementById('features-container');
@@ -292,10 +309,6 @@
                         </details>
                     `;
                 });
-        }
-
-        function filterFeatures(type) {
-            renderFeatures(type);
         }
 
         function getStatusColor(status) {
@@ -330,10 +343,9 @@
                             </select>
                         </div>
 
-                        <!-- Keterangan di bawahnya -->
                         <div>
                             <label class="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Keterangan Progres / Link Hasil Kerja / Detail Revisi:</label>
-                            <textarea id="${key}-note" rows="2" class="w-full text-xs p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Tulis apa yang sudah dikerjakan, kendala, atau tempel link Figma/GitHub/Docs...">${cp.note || ''}</textarea>
+                            <textarea id="${key}-note" rows="2" class="w-full text-xs p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Tulis apa yang dikerjakan, kendala, atau tempel link Figma/GitHub/Docs...">${cp.note || ''}</textarea>
                         </div>
 
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
@@ -348,7 +360,7 @@
         }
 
         // ==========================================
-        // 4. FIREBASE REALTIME SYNC & HISTORY LOG
+        // 5. SINKRONISASI FIREBASE & HISTORY LOG
         // ==========================================
         const syncBadge = document.getElementById('sync-badge');
         db.ref('.info/connected').on('value', (snap) => {
@@ -366,7 +378,6 @@
             return now.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
         }
 
-        // Submit Checkpoint + Catat ke History
         function submitCheckpoint(key) {
             const user = getActiveUser();
             const newStatus = document.getElementById(`${key}-status`).value;
@@ -384,10 +395,7 @@
                 updatedAt: timeStr
             };
 
-            // 1. Update status checkpoint saat ini
             db.ref(`superapp_project/checkpoints/${key}`).set(updatedObj);
-
-            // 2. Push ke History Log
             db.ref('superapp_project/history').push({
                 user: user,
                 taskTitle: title,
@@ -398,7 +406,6 @@
             });
         }
 
-        // Otomatis isi peran ke-3 yang kosong untuk Eral
         function autoAssignRemainingRole() {
             const rA = document.getElementById('role-a-name').value.trim();
             const rB = document.getElementById('role-b-name').value.trim();
@@ -408,7 +415,7 @@
             else if (rA && !rB && rC) document.getElementById('role-b-name').value = "Eral Shabya Dewantara";
             else if (!rA && rB && rC) document.getElementById('role-a-name').value = "Eral Shabya Dewantara";
             else {
-                alert("Pastikan 2 peran sudah diisi oleh temanmu terlebih dahulu, baru klik tombol ini agar peran terakhir otomatis terisi untuk Eral!");
+                alert("Pastikan 2 peran sudah diisi oleh temanmu terlebih dahulu, baru klik tombol ini agar peran terakhir otomatis diisi untuk Eral!");
                 return;
             }
             saveRolesToFirebase();
@@ -432,19 +439,15 @@
             });
         }
 
-        // Listener Realtime: Peran
         db.ref('superapp_project/roles').on('value', (snap) => {
             const data = snap.val();
             if (data) {
-                currentRoles = data;
                 document.getElementById('role-a-name').value = data.roleA || '';
                 document.getElementById('role-b-name').value = data.roleB || '';
                 document.getElementById('role-c-name').value = data.roleC || '';
             }
-            updateAIPrompt();
         });
 
-        // Listener Realtime: Checkpoints
         db.ref('superapp_project/checkpoints').on('value', (snap) => {
             const data = snap.val();
             if (data) {
@@ -453,23 +456,18 @@
                 });
             }
             renderCheckpoints();
-            updateAIPrompt();
         });
 
-        // Listener Realtime: History Log
-        db.ref('superapp_project/history').limitToLast(25).on('value', (snap) => {
+        db.ref('superapp_project/history').limitToLast(30).on('value', (snap) => {
             const data = snap.val();
             const container = document.getElementById('history-list');
-            currentHistory = [];
             if (!data) {
                 container.innerHTML = '<p class="text-slate-400 italic text-xs">Belum ada riwayat submit...</p>';
-                updateAIPrompt();
                 return;
             }
             const items = Object.values(data).reverse();
-            currentHistory = items;
             container.innerHTML = items.map(item => `
-                <div class="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
                     <div class="flex justify-between items-center">
                         <span class="font-bold text-indigo-600 dark:text-indigo-400">${item.user}</span>
                         <span class="text-[10px] text-slate-400">${item.timestamp}</span>
@@ -481,64 +479,13 @@
                     ${item.note ? `<p class="text-[11px] italic text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800">"${item.note}"</p>` : ''}
                 </div>
             `).join('');
-            updateAIPrompt();
         });
 
-        // ==========================================
-        // 5. GENERATOR PROMPT AI LINTAS ANGGOTA
-        // ==========================================
-        function updateAIPrompt() {
-            const cpSummary = Object.keys(defaultCheckpoints).map(k => {
-                const cp = currentCheckpoints[k] || defaultCheckpoints[k];
-                return `- ${cp.title}: [${cp.status}] (PIC: ${cp.owner} | Update terakhir oleh: ${cp.updatedBy || '-'})\n  Catatan/Progres: ${cp.note || '-'}`;
-            }).join('\n');
-
-            const recentLogs = currentHistory.slice(0, 5).map(h => 
-                `- [${h.timestamp}] ${h.user} mengubah "${h.taskTitle}" (${h.fromStatus} -> ${h.toStatus}): "${h.note || '-'}"`
-            ).join('\n') || '- Belum ada riwayat submit.';
-
-            const prompt = `Halo AI! Kamu adalah asisten kolaborator untuk tim kami (3 orang) di kompetisi GDGoC ITB Challenge (Case 1: Smarter Campus and Learning).
-Kami sedang membangun "Next-Gen Campus Super App (API-Driven Trust Ecosystem)" dengan tenggat Preliminary Submission 10 November 2026 dan Semifinal MVP 30 November 2026.
-
-PEMBAGIAN 3 PERAN TIM SAAT INI:
-1. Peran A (Lead System, API SIAKAD & Security): ${currentRoles.roleA || '(Belum diklaim)'}
-2. Peran B (Product, Pitch Deck & UI/UX): ${currentRoles.roleB || '(Belum diklaim)'}
-3. Peran C (AI Matchmaking, RAG Forum & Marketplace): ${currentRoles.roleC || '(Belum diklaim)'}
-
-STATUS CHECKPOINT & PROGRES TERKINI:
-${cpSummary}
-
-5 RIWAYAT SUBMIT TERAKHIR ANGGOTA TIM:
-${recentLogs}
-
-Berdasarkan pembagian peran, status checkpoint, dan riwayat pengerjaan di atas, bantu saya menyelesaikan bagian tugas saya selanjutnya secara konkret!`;
-
-            document.getElementById('ai-prompt-output').value = prompt;
-        }
-
-        function copyAIPrompt() {
-            const el = document.getElementById('ai-prompt-output');
-            el.select();
-            navigator.clipboard.writeText(el.value);
-            alert("Konteks proyek & riwayat berhasil disalin! Silakan paste ke AI kamu.");
-        }
-
-        // Navigasi Tab
-        function switchTab(tabId, btnEl) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById('tab-' + tabId).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.className = "nav-btn flex flex-col items-center text-slate-500 dark:text-slate-400 text-[11px] font-medium space-y-0.5";
-            });
-            btnEl.className = "nav-btn flex flex-col items-center text-indigo-600 dark:text-indigo-400 text-[11px] font-semibold space-y-0.5";
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
         // Jalankan saat halaman dibuka
+        initAuth();
         initLocalPreferences();
         renderFeatures('all');
         renderCheckpoints();
-        updateAIPrompt();
     </script>
 </body>
 </html>
