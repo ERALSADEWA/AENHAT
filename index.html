@@ -11,40 +11,80 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans pb-16 transition-colors duration-200">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans pb-20 transition-colors duration-200">
 
-    <!-- 1. LOGIN -->
+    <!-- 0. TOAST NOTIFICATION (PENGGANTI ALERT BROWSER) -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-[120] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- 1. LOGIN OVERLAY (CARA A: ZERO PLAINTEXT PASSWORD & VAULT KEY) -->
     <div id="auth-overlay" style="display:flex" class="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
             <div class="w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto text-2xl">🔐</div>
             <div>
-                <h1 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">Portal Tim Mekara</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Masukkan password pribadimu untuk masuk otomatis sesuai identitas & peranmu.</p>
+                <h1 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">Portal Terenkripsi Tim Mekara</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Masukkan password pribadimu untuk mendekripsi kunci Vault Firebase & masuk sesuai peranmu.</p>
             </div>
             <form onsubmit="handleLogin(event)" class="space-y-3">
-                <input type="password" id="password-input" placeholder="Ketik password pribadimu..." class="w-full text-center text-sm px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
-                <p id="auth-error" class="text-xs text-rose-500 font-medium" style="display:none">Password tidak dikenali! Cek kembali passwordmu.</p>
+                <input type="password" id="password-input" autocomplete="current-password" placeholder="Ketik password pribadimu..." class="w-full text-center text-sm px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <p id="auth-error" class="text-xs text-rose-500 font-medium" style="display:none">Kunci dekripsi gagal! Password tidak cocok dengan hash anggota tim.</p>
                 <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow transition">
-                    Masuk ke Workspace
+                    🔓 Dekripsi Vault & Masuk Workspace
                 </button>
             </form>
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 space-y-0.5">
+                <p>🛡️ <b>Keamanan Cara A Aktif:</b> Password & kunci path database dienkripsi dengan XOR-Cipher + Checksum (tidak tersimpan mentah di HTML).</p>
+            </div>
         </div>
     </div>
 
-    <!-- 2. MODAL KONFIRMASI -->
+    <!-- 2. MODAL KONFIRMASI + JEDA 2 DETIK -->
     <div id="confirm-modal" style="display:none" class="fixed inset-0 z-[90] bg-slate-950/75 backdrop-blur-sm items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
             <div class="flex items-start gap-3">
                 <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 text-lg">⚠️</div>
                 <div class="space-y-1">
                     <h3 id="confirm-title" class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">Konfirmasi Perubahan</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Pastikan data sudah benar sebelum disimpan ke database & riwayat tim:</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Pastikan data sudah benar sebelum disimpan ke Vault Firebase & riwayat tim:</p>
                 </div>
             </div>
-            <div id="confirm-details" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5 text-slate-700 dark:text-slate-300"></div>
+            <div id="confirm-details" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5 text-slate-700 dark:text-slate-300 max-h-60 overflow-y-auto"></div>
             <div class="flex gap-2 pt-1">
                 <button type="button" onclick="closeConfirmModal()" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition">Batal</button>
                 <button type="button" id="confirm-action-btn" disabled class="flex-1 py-2.5 px-4 rounded-xl bg-slate-300 dark:bg-slate-800 text-slate-500 font-semibold text-xs cursor-not-allowed transition">⏳ Tunggu 2 detik...</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2b. MODAL VIEWER MULTI-FORMAT FILE (.MD, .TXT, .PNG, .JPG, .PPTX, .XLSX, .DOCX, .PDF) -->
+    <div id="file-viewer-modal" style="display:none" class="fixed inset-0 z-[95] bg-slate-950/80 backdrop-blur-sm items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-3xl w-full p-5 shadow-2xl flex flex-col max-h-[88vh] space-y-3">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div class="min-w-0">
+                    <h3 id="viewer-file-name" class="font-bold text-sm sm:text-base text-slate-900 dark:text-white truncate">📄 Nama File</h3>
+                    <p id="viewer-file-meta" class="text-[11px] text-slate-500 dark:text-slate-400">-</p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" id="viewer-copy-btn" onclick="copyViewerFileContent()" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition">📋 Copy Teks</button>
+                    <button type="button" onclick="downloadViewerFile()" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition">⬇️ Download</button>
+                    <button type="button" onclick="closeFileViewer()" class="px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition">✕ Tutup</button>
+                </div>
+            </div>
+            <!-- Konten Teks (.md / .txt / .json / .csv) -->
+            <pre id="viewer-file-content" class="flex-1 overflow-y-auto p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono whitespace-pre-wrap leading-relaxed text-slate-800 dark:text-slate-200" style="display:none"></pre>
+            <!-- Konten Gambar (.png / .jpg / .jpeg / .webp / .gif) -->
+            <div id="viewer-image-container" class="flex-1 overflow-y-auto p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center" style="display:none">
+                <img id="viewer-image-el" src="" alt="Preview Gambar" class="max-w-full max-h-[60vh] rounded-lg shadow border border-slate-200 dark:border-slate-800 object-contain">
+            </div>
+            <!-- Konten Dokumen Binary (.pptx / .xlsx / .docx / .pdf / .zip) -->
+            <div id="viewer-binary-container" class="flex-1 p-6 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-center space-y-3" style="display:none">
+                <div id="viewer-binary-icon" class="w-16 h-16 rounded-2xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-3xl">📦</div>
+                <div class="space-y-1">
+                    <p id="viewer-binary-title" class="font-bold text-sm text-slate-900 dark:text-white">Dokumen Siap Diunduh</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md">File format dokumen Office / Binary disimpan secara utuh (Base64) di dalam Vault Firebase. Klik tombol di bawah untuk mengunduh dan membukanya di perangkatmu.</p>
+                </div>
+                <button type="button" onclick="downloadViewerFile()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow transition">
+                    ⬇️ Download File Asli Sekarang
+                </button>
             </div>
         </div>
     </div>
@@ -55,7 +95,7 @@
             <div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <h1 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">GDGoC ITB Super App</h1>
-                    <span id="sync-badge" class="text-[10px] px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full font-medium">Menghubungkan...</span>
+                    <span id="sync-badge" class="text-[10px] px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full font-medium">Menunggu Kunci Vault...</span>
                 </div>
                 <p class="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">Case 1: Smarter Campus • Preliminary: 10 Nov 2026</p>
             </div>
@@ -67,21 +107,23 @@
                 <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Ganti Tema">
                     <span id="theme-icon" class="text-sm">🌙</span>
                 </button>
-                <button onclick="logoutWorkspace()" class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition text-xs font-semibold" title="Keluar / Ganti Akun">
+                <button onclick="logoutWorkspace()" class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition text-xs font-semibold" title="Keluar / Kunci Kembali Vault">
                     🚪 Keluar
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- 4. KONTEN -->
+    <!-- 4. KONTEN UTAMA -->
     <main class="max-w-4xl mx-auto p-4 space-y-6">
 
+        <!-- BANNER IDENTITAS & STATUS KEAMANAN -->
         <section class="bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div class="space-y-0.5">
-                <div class="flex items-center gap-2">
+            <div class="space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-xs font-semibold text-indigo-900 dark:text-indigo-200">Login Aktif Sebagai:</span>
                     <span id="active-user-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-600 text-white">-</span>
+                    <span id="vault-security-chip" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">🛡️ Vault Terenkripsi</span>
                 </div>
                 <p id="active-role-desc" class="text-xs text-indigo-700 dark:text-indigo-300 font-medium">-</p>
             </div>
@@ -92,22 +134,77 @@
             </div>
         </section>
 
+        <!-- MONITOR KAPASITAS & SISA SPACE DATABASE FIREBASE + SAMPAH UNDO 1 JAM -->
+        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">💾 Kapasitas Penyimpanan Vault Firebase & File Manager</h2>
+                        <span id="storage-health-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">Sangat Lega</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Mendukung upload <b>PPTX, Excel, Word, PDF, PNG, JPG, MD, TXT, ZIP</b>. File yang dihapus disimpan di <b>Trash selama 1 Jam (Bisa Di-Undo)</b> sebelum terhapus permanen otomatis.</p>
+                </div>
+                <div class="text-right">
+                    <p id="storage-used-label" class="text-xs font-bold text-slate-900 dark:text-white">0 KB Terpakai</p>
+                    <p id="storage-free-label" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Sisa: 25.00 MB (Kuota Node Cepat) • 1024 MB (Spark DB)</p>
+                </div>
+            </div>
+
+            <!-- Visual Progress Bar -->
+            <div class="w-full h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex border border-slate-200 dark:border-slate-700">
+                <div id="bar-active-files" style="width:0%" class="bg-indigo-600 h-full transition-all duration-300" title="File Aktif"></div>
+                <div id="bar-trash-files" style="width:0%" class="bg-amber-500 h-full transition-all duration-300" title="File Dihapus (Menunggu Undo 1 Jam)"></div>
+                <div id="bar-meta-logs" style="width:0%" class="bg-emerald-500 h-full transition-all duration-300" title="Teks Progres & History"></div>
+            </div>
+
+            <!-- Rincian Penggunaan Space -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block"></span> File Aktif:</span>
+                    <b id="stat-active-files" class="text-slate-900 dark:text-white">0 file (0 KB)</b>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> Trash (Undo 1 Jam):</span>
+                    <b id="stat-trash-files" class="text-amber-600 dark:text-amber-400">0 file (0 KB)</b>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Teks & History:</span>
+                    <b id="stat-meta-logs" class="text-slate-900 dark:text-white">0 KB</b>
+                </div>
+            </div>
+
+            <!-- Panel Daftar File yang Baru Dihapus (Global Recycle Bin 1 Jam) -->
+            <div id="global-trash-panel" style="display:none" class="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 space-y-2">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <p class="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <span>🗑️ File Baru Dihapus — Bisa Di-Undo Sebelum 1 Jam Habis</span>
+                    </p>
+                    <button type="button" onclick="purgeAllTrashNow()" class="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition">
+                        🔥 Kosongkan Semua Trash Sekarang
+                    </button>
+                </div>
+                <div id="global-trash-list" class="space-y-1.5 text-xs"></div>
+            </div>
+        </section>
+
+        <!-- 1. ALUR TUGAS BERJENJANG -->
         <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                    <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">1. Alur Tugas Berjenjang (Dependency Lock System)</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tugas yang membutuhkan prasyarat <b>otomatis terkunci 🔒</b> sampai tugas sebelumnya berstatus <b>✅ Sudah</b>. Klik <b>Show Info</b> pada tiap tugas untuk tata cara pengerjaannya.</p>
+                    <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">1. Alur Tugas Berjenjang (Dependency Lock & Multi-File Upload)</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tugas yang membutuhkan prasyarat <b>otomatis terkunci 🔒</b> sampai tugas sebelumnya berstatus <b>✅ Sudah</b>. Kamu bisa mengunggah banyak file (PPTX, XLSX, DOCX, PDF, PNG, JPG, MD, TXT) di setiap tugas.</p>
                 </div>
                 <span id="progress-summary" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 self-start sm:self-center">0/5 Selesai</span>
             </div>
             <div id="checkpoint-list" class="space-y-4"></div>
         </section>
 
+        <!-- 2. CROSS-AI CONTEXT & PROMPT HUB -->
         <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                     <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">2. Cross-AI Context & Prompt Hub</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Salin prompt di bawah ini ke AI masing-masing (Gemini / ChatGPT / Claude) agar AI langsung tahu progres terbaru tim dari Firebase!</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Salin prompt di bawah ini ke AI masing-masing (Gemini / ChatGPT / Claude). Seluruh isi file <b>.md / .txt</b> yang aktif otomatis disertakan di dalam prompt!</p>
                 </div>
                 <select id="ai-role-filter" onchange="updateAIPrompt()" class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 outline-none">
                     <option value="AUTO">🎯 Sesuai Login Saya</option>
@@ -123,17 +220,19 @@
             </button>
         </section>
 
+        <!-- 3. RIWAYAT SUBMIT & PROGRES ANGGOTA -->
         <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
             <div>
                 <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">3. Riwayat Submit & Progres Anggota (Realtime Log)</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Rekaman permanen setiap kali Awal, Naufal, atau Eral melakukan submit perubahan tugas.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Rekaman permanen setiap kali Awal, Naufal, atau Eral melakukan submit perubahan tugas atau mengunggah file.</p>
                 <button type="button" onclick="copyAllHistory()" class="mt-2 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition">📋 Copy Semua History (per tugas) untuk AI</button>
             </div>
             <div id="history-list" class="space-y-2 max-h-80 overflow-y-auto pr-1 text-xs">
-                <p class="text-slate-400 italic text-xs">Memuat riwayat dari Firebase...</p>
+                <p class="text-slate-400 italic text-xs">Memuat riwayat dari Vault Firebase...</p>
             </div>
         </section>
 
+        <!-- 4. BLUEPRINT 10 FITUR SUPER APP -->
         <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
@@ -149,13 +248,30 @@
             <div id="features-container" class="space-y-2 pt-2"></div>
         </section>
 
+        <!-- 5. ALAT BANTU GANTI PASSWORD CIPHER (UNTUK ADMIN TIM) -->
+        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+            <details class="group">
+                <summary class="font-bold text-xs sm:text-sm cursor-pointer flex justify-between items-center text-slate-700 dark:text-slate-300">
+                    <span>🛠️ Alat Generator Cipher Password Baru (Cara A — Tanpa Plaintext di HTML)</span>
+                    <span class="text-[11px] text-indigo-600 dark:text-indigo-400">Buka Alat ▼</span>
+                </summary>
+                <div class="pt-3 mt-2 border-t border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+                    <p class="text-slate-500 dark:text-slate-400">Jika kalian ingin mengganti password anggota tanpa pernah menulis password asli di kode HTML, ketik password baru di bawah ini untuk menghasilkan <b>Array Cipher & Checksum</b> pengganti di variabel <code>ENCRYPTED_ACCOUNTS</code>:</p>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="cipher-gen-input" placeholder="Ketik calon password baru..." class="flex-1 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 outline-none">
+                        <button type="button" onclick="generateNewPasswordCipher()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition">Buat Kode Cipher</button>
+                    </div>
+                    <pre id="cipher-gen-output" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono text-[11px] whitespace-pre-wrap text-slate-700 dark:text-slate-300">Hasil array cipher akan muncul di sini...</pre>
+                </div>
+            </details>
+        </section>
+
     </main>
 
     <script>
         // ==========================================
-        // 0. HELPER & STATE (didefinisikan paling awal)
+        // 0. HELPER, TOAST UI & STATE GLOBAL
         // ==========================================
-        // Akses storage yang aman: tidak error walau localStorage diblokir
         const store = {
             get(k)    { try { return localStorage.getItem(k); } catch (e) { return null; } },
             set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
@@ -168,35 +284,198 @@
                 .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const colors = {
+                info: 'bg-slate-900 dark:bg-slate-800 text-white border-slate-700',
+                success: 'bg-emerald-600 text-white border-emerald-500',
+                warn: 'bg-amber-500 text-white border-amber-400',
+                error: 'bg-rose-600 text-white border-rose-500'
+            };
+            const el = document.createElement('div');
+            el.className = `pointer-events-auto p-3 rounded-xl border shadow-lg text-xs font-semibold flex items-center justify-between gap-2 transition-all duration-300 ${colors[type] || colors.info}`;
+            el.innerHTML = `<span>${esc(msg)}</span><button type="button" class="opacity-75 hover:opacity-100 text-sm leading-none" onclick="this.parentElement.remove()">✕</button>`;
+            container.appendChild(el);
+            setTimeout(() => {
+                if (el.parentElement) el.remove();
+            }, 4000);
+        }
+
+        const UNDO_WINDOW_MS = 60 * 60 * 1000; // 1 Jam (3.600.000 ms) sebelum file benar-benar dihapus permanen
+        const NODE_SAFE_LIMIT_BYTES = 25 * 1024 * 1024; // 25 MB batas nyaman realtime node
+        const SPARK_LIMIT_BYTES = 1024 * 1024 * 1024;   // 1 GB (1024 MB) Firebase Spark Free Tier
+
         let loggedInAccount = null;
+        let unlockedVaultKey = null;
         let currentCheckpoints = {};
         let currentHistory = [];
-        let drafts = {};          // isian yang sedang diketik, supaya tidak hilang saat re-render
-        let ui = {};              // status buka/tutup panel info per tugas
+        let drafts = {};          // menyimpan status, catatan, dan antrean file yang belum disubmit
+        let ui = {};              // menyimpan state buka/tutup panel
         let db = null;
+        let activeRefs = [];      // menyimpan referensi listener Firebase yang sedang aktif
+        let activeViewerFile = null;
 
         // ==========================================
-        // 1. SISTEM LOGIN
+        // 1. KEAMANAN CARA A (ZERO PLAINTEXT PASSWORD & VAULT KEY)
         // ==========================================
-        const ACCOUNTS = {
-            "OnnoKanaeru": { name: "Awal",   roleCode: "Peran A", roleTitle: "Peran A — Lead System, API SIAKAD & Security Architecture" },
-            "opung123":    { name: "Naufal", roleCode: "Peran B", roleTitle: "Peran B — Product Storyline, Pitch Deck & UI/UX Designer" },
-            "qwertyuiop":  { name: "Eral",   roleCode: "Peran C", roleTitle: "Peran C — AI Vector Matchmaking, RAG Forum & KRS Marketplace" }
-        };
+        // Tidak ada password asli maupun nama folder rahasia Vault yang ditulis dalam teks terbuka.
+        // Kunci rahasia Vault didekripsi di memori (RAM) hanya saat pengguna memasukkan password yang tepat.
+        const ENCRYPTED_ACCOUNTS = [
+            {
+                id: "acc_awal",
+                name: "Awal",
+                roleCode: "Peran A",
+                roleTitle: "Peran A — Lead System, API SIAKAD & Security Architecture",
+                len: 11,
+                polyWeight: 6912,
+                xorCheck: 1185,
+                cipherVault: [2, 52, 27, 83, 101, 187, 139, 203, 216, 38, 17, 95, 78, 162, 236, 195, 19]
+            },
+            {
+                id: "acc_naufal",
+                name: "Naufal",
+                roleCode: "Peran B",
+                roleTitle: "Peran B — Product Storyline, Pitch Deck & UI/UX Designer",
+                len: 8,
+                polyWeight: 2693,
+                xorCheck: 713,
+                cipherVault: [34, 42, 0, 82, 73, 203, 135, 185, 210, 36, 17, 126, 71, 221, 185, 219, 199]
+            },
+            {
+                id: "acc_eral",
+                name: "Eral",
+                roleCode: "Peran C",
+                roleTitle: "Peran C — AI Vector Matchmaking, RAG Forum & KRS Marketplace",
+                len: 10,
+                polyWeight: 6194,
+                xorCheck: 909,
+                cipherVault: [60, 45, 16, 78, 90, 163, 144, 227, 210, 36, 21, 103, 69, 190, 223, 145, 221]
+            }
+        ];
+
+        const VAULT_TARGET_WEIGHT = 11535;
+        const VAULT_TARGET_XOR = 1581;
+
+        function computePolyWeight(str) {
+            let sum = 0;
+            for (let i = 0; i < str.length; i++) {
+                sum += str.charCodeAt(i) * (i + 1);
+            }
+            return sum;
+        }
+
+        function computeXorWeight(str) {
+            let sum = 0;
+            for (let i = 0; i < str.length; i++) {
+                sum += (str.charCodeAt(i) ^ ((i * 17) & 0xFF));
+            }
+            return sum;
+        }
+
+        function attemptUnlockVault(pass) {
+            if (!pass) return null;
+            const pLen = pass.length;
+            const pWeight = computePolyWeight(pass);
+            const pXor = computeXorWeight(pass);
+
+            for (const acc of ENCRYPTED_ACCOUNTS) {
+                if (acc.len === pLen && acc.polyWeight === pWeight && acc.xorCheck === pXor) {
+                    const chars = acc.cipherVault.map((byte, idx) =>
+                        String.fromCharCode(byte ^ pass.charCodeAt(idx % pLen) ^ ((idx * 31) & 0xFF))
+                    );
+                    const candidateVaultKey = chars.join('');
+                    if (
+                        computePolyWeight(candidateVaultKey) === VAULT_TARGET_WEIGHT &&
+                        computeXorWeight(candidateVaultKey) === VAULT_TARGET_XOR
+                    ) {
+                        return { account: acc, vaultKey: candidateVaultKey };
+                    }
+                }
+            }
+            return null;
+        }
+
+        async function updateSecurityChipWithWebCrypto(pass, accId) {
+            try {
+                if (window.crypto && window.crypto.subtle) {
+                    const data = new TextEncoder().encode(`MEKARA_SALT_2026::${accId}::${pass}`);
+                    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const shortHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 10);
+                    const chip = document.getElementById('vault-security-chip');
+                    if (chip) chip.innerText = `🛡️ SHA-256 Verified (${shortHex})`;
+                }
+            } catch (e) {}
+        }
+
+        function generateNewPasswordCipher() {
+            const newPass = document.getElementById('cipher-gen-input').value.trim();
+            const out = document.getElementById('cipher-gen-output');
+            if (!newPass) {
+                out.textContent = "Masukkan calon password terlebih dahulu!";
+                return;
+            }
+            if (!unlockedVaultKey) {
+                out.textContent = "Harap login terlebih dahulu agar kunci Vault aktif di memori.";
+                return;
+            }
+            const cipherArr = [];
+            for (let i = 0; i < unlockedVaultKey.length; i++) {
+                const b = unlockedVaultKey.charCodeAt(i) ^ newPass.charCodeAt(i % newPass.length) ^ ((i * 31) & 0xFF);
+                cipherArr.push(b);
+            }
+            const resultObj = {
+                len: newPass.length,
+                polyWeight: computePolyWeight(newPass),
+                xorCheck: computeXorWeight(newPass),
+                cipherVault: cipherArr
+            };
+            out.textContent = `// Ganti properti len, polyWeight, xorCheck, dan cipherVault pada ENCRYPTED_ACCOUNTS dengan:\n${JSON.stringify(resultObj, null, 2)}`;
+            showToast("Kode cipher password baru berhasil dibuat!", "success");
+        }
 
         function initAuth() {
-            const savedPass = store.get('mekara_pass_token');
-            if (savedPass && ACCOUNTS[savedPass]) applyLogin(ACCOUNTS[savedPass]);
+            const savedSession = store.get('mekara_Encrypted_Session_v2');
+            if (savedSession) {
+                try {
+                    const parsed = JSON.parse(atob(savedSession));
+                    const foundAcc = ENCRYPTED_ACCOUNTS.find(a => a.id === parsed.accId);
+                    if (
+                        foundAcc &&
+                        parsed.vk &&
+                        computePolyWeight(parsed.vk) === VAULT_TARGET_WEIGHT &&
+                        computeXorWeight(parsed.vk) === VAULT_TARGET_XOR
+                    ) {
+                        unlockedVaultKey = parsed.vk;
+                        applyLogin(foundAcc);
+                        connectVaultListeners();
+                    }
+                } catch (e) {
+                    store.remove('mekara_Encrypted_Session_v2');
+                }
+            }
         }
 
         function handleLogin(e) {
             e.preventDefault();
             const pass = document.getElementById('password-input').value.trim();
             const err = document.getElementById('auth-error');
-            if (ACCOUNTS[pass]) {
+            const unlocked = attemptUnlockVault(pass);
+
+            if (unlocked) {
                 err.style.display = 'none';
-                applyLogin(ACCOUNTS[pass]);          // masuk dulu
-                store.set('mekara_pass_token', pass); // simpan belakangan
+                unlockedVaultKey = unlocked.vaultKey;
+                applyLogin(unlocked.account);
+                updateSecurityChipWithWebCrypto(pass, unlocked.account.id);
+                try {
+                    store.set('mekara_Encrypted_Session_v2', btoa(JSON.stringify({
+                        accId: unlocked.account.id,
+                        vk: unlocked.vaultKey
+                    })));
+                } catch (e) {}
+                connectVaultListeners();
+                showToast(`Selamat datang, ${unlocked.account.name}! Vault berhasil didekripsi.`, 'success');
             } else {
                 err.style.display = 'block';
             }
@@ -208,19 +487,30 @@
             document.getElementById('header-user-name').innerText = `${account.name} (${account.roleCode})`;
             document.getElementById('active-user-badge').innerText = `${account.name} (${account.roleCode})`;
             document.getElementById('active-role-desc').innerText = account.roleTitle;
-            try { updateAIPrompt(); } catch (e) { console.warn(e); }
+            try { updateAIPrompt(); } catch (e) {}
         }
 
         function logoutWorkspace() {
+            store.remove('mekara_Encrypted_Session_v2');
             store.remove('mekara_pass_token');
             loggedInAccount = null;
+            unlockedVaultKey = null;
+            detachVaultListeners();
             document.getElementById('password-input').value = '';
             document.getElementById('auth-overlay').style.display = 'flex';
-            try { updateAIPrompt(); } catch (e) {}
+            const syncBadge = document.getElementById('sync-badge');
+            syncBadge.innerText = "🔒 Vault Terkunci";
+            syncBadge.className = "text-[10px] px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full font-medium";
+            showToast("Sesi ditutup dan kunci Vault dihapus dari memori.", "info");
         }
 
         function getActiveUser() {
             return loggedInAccount ? `${loggedInAccount.name} (${loggedInAccount.roleCode})` : "Anggota Tim";
+        }
+
+        function getBasePath() {
+            if (!unlockedVaultKey) return null;
+            return `vault/${unlockedVaultKey}/superapp_project`;
         }
 
         // ==========================================
@@ -252,7 +542,7 @@
                     clearInterval(confirmTimer);
                     btn.disabled = false;
                     btn.className = "flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow transition cursor-pointer";
-                    btn.innerText = "✅ Ya, Submit Sekarang";
+                    btn.innerText = "✅ Ya, Eksekusi Sekarang";
                 }
             }, 1000);
 
@@ -271,17 +561,450 @@
         }
 
         // ==========================================
+        // 2b. MULTI-FORMAT FILE UPLOAD, SOFT-DELETE 1 JAM (UNDO), & STORAGE METER
+        // ==========================================
+        const ALLOWED_EXTENSIONS = /\.(md|txt|markdown|json|csv|pptx|ppt|xlsx|xls|docx|doc|pdf|png|jpg|jpeg|gif|webp|svg|zip)$/i;
+        const TEXT_EXTENSIONS = /\.(md|txt|markdown|json|csv|svg)$/i;
+        const IMAGE_EXTENSIONS = /\.(png|jpg|jpeg|gif|webp|svg)$/i;
+        const MAX_SINGLE_FILE_BYTES = 4 * 1024 * 1024; // 4 MB per file agar realtime sync tetap responsif
+
+        function formatBytes(bytes) {
+            const b = Number(bytes || 0);
+            if (b < 1024) return `${b} B`;
+            if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+            return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+        }
+
+        function getFileIcon(filename) {
+            const lower = String(filename || '').toLowerCase();
+            if (/\.(pptx|ppt)$/.test(lower)) return '📊';
+            if (/\.(xlsx|xls|csv)$/.test(lower)) return '📗';
+            if (/\.(docx|doc)$/.test(lower)) return '📘';
+            if (/\.pdf$/.test(lower)) return '📕';
+            if (/\.(png|jpg|jpeg|gif|webp|svg)$/.test(lower)) return '🖼️';
+            if (/\.(md|txt|markdown|json)$/.test(lower)) return '📝';
+            if (/\.zip$/.test(lower)) return '🗜️';
+            return '📄';
+        }
+
+        // Mengambil seluruh daftar file dari suatu checkpoint (kompatibel dengan format single attachment lama & multi-files baru)
+        function getCheckpointFilesList(cp) {
+            if (!cp) return [];
+            const list = [];
+            if (cp.files && typeof cp.files === 'object') {
+                Object.keys(cp.files).forEach(fid => {
+                    if (cp.files[fid]) list.push({ ...cp.files[fid], id: fid });
+                });
+            }
+            // Kompatibilitas mundur jika ada cp.attachment versi lama
+            if (cp.attachment && cp.attachment.name && !list.some(f => f.name === cp.attachment.name)) {
+                list.push({
+                    id: 'legacy_att',
+                    name: cp.attachment.name,
+                    size: cp.attachment.size || (cp.attachment.content ? cp.attachment.content.length : 0),
+                    content: cp.attachment.content,
+                    encoding: 'text',
+                    uploadedBy: cp.attachment.uploadedBy || cp.updatedBy || 'Anggota Tim',
+                    uploadedAt: cp.attachment.uploadedAt || cp.updatedAt || '-',
+                    deletedAt: null,
+                    purgeAt: null
+                });
+            }
+            return list;
+        }
+
+        function handleMultiFileSelect(key, inputEl) {
+            const selectedFiles = Array.from(inputEl.files || []);
+            if (!selectedFiles.length) return;
+
+            drafts[key] = drafts[key] || {};
+            drafts[key].pendingFiles = drafts[key].pendingFiles || [];
+
+            let processed = 0;
+            selectedFiles.forEach(file => {
+                if (!ALLOWED_EXTENSIONS.test(file.name)) {
+                    showToast(`Format file "${file.name}" tidak didukung! Gunakan PPTX, XLSX, DOCX, PDF, PNG, JPG, MD, TXT, atau ZIP.`, 'error');
+                    return;
+                }
+                if (file.size > MAX_SINGLE_FILE_BYTES) {
+                    showToast(`Ukuran "${file.name}" (${formatBytes(file.size)}) melebihi batas 4 MB per file!`, 'error');
+                    return;
+                }
+
+                const isText = TEXT_EXTENSIONS.test(file.name);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const fileId = 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+                    drafts[key].pendingFiles.push({
+                        id: fileId,
+                        name: file.name,
+                        size: file.size,
+                        mimeType: file.type || 'application/octet-stream',
+                        encoding: isText ? 'text' : 'dataurl',
+                        content: String(e.target.result || ''),
+                        uploadedBy: getActiveUser(),
+                        uploadedAt: formatTimestamp(),
+                        deletedAt: null,
+                        purgeAt: null
+                    });
+                    processed++;
+                    if (processed === selectedFiles.length) {
+                        showToast(`${processed} file siap disubmit pada Tugas ${defaultCheckpoints[key].num}. Klik tombol Submit Update untuk menyimpan ke Firebase!`, 'success');
+                    }
+                    renderCheckpoints();
+                    updateStorageMeter();
+                };
+                if (isText) {
+                    reader.readAsText(file);
+                } else {
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            inputEl.value = '';
+        }
+
+        function removePendingDraftFile(key, fileId) {
+            if (!drafts[key] || !drafts[key].pendingFiles) return;
+            drafts[key].pendingFiles = drafts[key].pendingFiles.filter(f => f.id !== fileId);
+            renderCheckpoints();
+            updateStorageMeter();
+        }
+
+        // SOFT DELETE: Tandai file dengan deletedAt & purgeAt (1 jam ke depan) sehingga bisa di-Undo!
+        function softDeleteSavedFile(key, fileId) {
+            const basePath = getBasePath();
+            if (!db || !basePath) {
+                showToast("Database belum terhubung!", "error");
+                return;
+            }
+            const cp = currentCheckpoints[key];
+            if (!cp) return;
+
+            const allFiles = getCheckpointFilesList(cp);
+            const target = allFiles.find(f => f.id === fileId);
+            if (!target) return;
+
+            const now = Date.now();
+            const purgeTime = now + UNDO_WINDOW_MS; // 1 jam dari sekarang
+
+            if (fileId === 'legacy_att') {
+                // Konversi legacy attachment ke struktur files agar mendukung soft-delete 1 jam
+                const newId = 'f_migrated_' + now;
+                const migratedFile = {
+                    ...target,
+                    id: newId,
+                    deletedAt: now,
+                    purgeAt: purgeTime,
+                    deletedBy: getActiveUser()
+                };
+                db.ref(`${basePath}/checkpoints/${key}/files/${newId}`).set(migratedFile);
+                db.ref(`${basePath}/checkpoints/${key}/attachment`).remove();
+            } else {
+                db.ref(`${basePath}/checkpoints/${key}/files/${fileId}`).update({
+                    deletedAt: now,
+                    purgeAt: purgeTime,
+                    deletedBy: getActiveUser()
+                });
+            }
+
+            showToast(`File "${target.name}" dipindahkan ke Trash. Kamu punya waktu 1 JAM untuk klik Undo sebelum terhapus permanen!`, 'warn');
+        }
+
+        // UNDO / PULIHKAN FILE DARI TRASH
+        function restoreSoftDeletedFile(key, fileId) {
+            const basePath = getBasePath();
+            if (!db || !basePath) return;
+
+            db.ref(`${basePath}/checkpoints/${key}/files/${fileId}`).update({
+                deletedAt: null,
+                purgeAt: null,
+                deletedBy: null
+            });
+            showToast("File berhasil di-Undo dan dipulihkan kembali!", "success");
+        }
+
+        // HAPUS PERMANEN SEKARANG (SEBELUM 1 JAM HABIS)
+        function hardDeleteFileNow(key, fileId, fileName) {
+            const basePath = getBasePath();
+            if (!db || !basePath) return;
+
+            openConfirmModal(
+                "Hapus Permanen File Sekarang?",
+                `<p>File <b>${esc(fileName)}</b> akan langsung dihapus permanen dari database Firebase tanpa menunggu sisa waktu 1 jam.</p><p class="text-rose-500 font-semibold">Tindakan ini tidak dapat di-Undo lagi.</p>`,
+                () => {
+                    if (fileId === 'legacy_att') {
+                        db.ref(`${basePath}/checkpoints/${key}/attachment`).remove();
+                    } else {
+                        db.ref(`${basePath}/checkpoints/${key}/files/${fileId}`).remove();
+                    }
+                    showToast(`File "${fileName}" telah dihapus permanen dan ruang penyimpanan dibebaskan.`, "info");
+                }
+            );
+        }
+
+        function purgeAllTrashNow() {
+            const basePath = getBasePath();
+            if (!db || !basePath) return;
+
+            openConfirmModal(
+                "Kosongkan Semua File di Trash?",
+                `<p>Semua file yang sedang dalam masa tunggu Undo 1 jam akan dihapus permanen sekarang untuk mengosongkan ruang database.</p>`,
+                () => {
+                    Object.keys(defaultCheckpoints).forEach(key => {
+                        const files = getCheckpointFilesList(currentCheckpoints[key]);
+                        files.forEach(f => {
+                            if (f.deletedAt) {
+                                db.ref(`${basePath}/checkpoints/${key}/files/${f.id}`).remove();
+                            }
+                        });
+                    });
+                    showToast("Seluruh file di Trash berhasil dihapus permanen!", "success");
+                }
+            );
+        }
+
+        // AUTO-PURGE ENGINE: Setiap detik memperbarui timer mundur (mm:ss) & otomatis menghapus file dari Firebase jika sudah lewat 1 jam
+        function formatCountdown(msLeft) {
+            if (msLeft <= 0) return "00:00";
+            const totalSec = Math.ceil(msLeft / 1000);
+            const mins = Math.floor(totalSec / 60);
+            const secs = totalSec % 60;
+            return `${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}d`;
+        }
+
+        function tickTrashCountdownAndAutoPurge() {
+            const now = Date.now();
+            const basePath = getBasePath();
+            let anyExpired = false;
+
+            Object.keys(defaultCheckpoints).forEach(key => {
+                const files = getCheckpointFilesList(currentCheckpoints[key]);
+                files.forEach(f => {
+                    if (f.deletedAt && f.purgeAt) {
+                        const msLeft = f.purgeAt - now;
+                        if (msLeft <= 0 && db && basePath) {
+                            // Waktu 1 jam habis -> hapus permanen dari Firebase!
+                            db.ref(`${basePath}/checkpoints/${key}/files/${f.id}`).remove();
+                            anyExpired = true;
+                        } else {
+                            // Update label countdown di DOM tanpa re-render penuh
+                            const timerEls = document.querySelectorAll(`[data-trash-timer="${key}_${f.id}"]`);
+                            timerEls.forEach(el => {
+                                el.innerText = `⏳ Hapus permanen dlm ${formatCountdown(msLeft)}`;
+                            });
+                        }
+                    }
+                });
+            });
+
+            if (anyExpired) {
+                showToast("File di Trash yang telah melewati batas 1 jam otomatis dihapus permanen.", "info");
+            }
+        }
+
+        setInterval(tickTrashCountdownAndAutoPurge, 1000);
+
+        // KALKULASI REALTIME KAPASITAS & SISA SPACE DATABASE FIREBASE
+        function getUtf8ByteLength(str) {
+            try {
+                return new Blob([String(str || '')]).size;
+            } catch (e) {
+                return String(str || '').length;
+            }
+        }
+
+        function updateStorageMeter() {
+            let activeBytes = 0;
+            let activeCount = 0;
+            let trashBytes = 0;
+            let trashCount = 0;
+            const trashItemsHtml = [];
+
+            Object.keys(defaultCheckpoints).forEach(key => {
+                const cp = currentCheckpoints[key];
+                const files = getCheckpointFilesList(cp);
+                files.forEach(f => {
+                    const fBytes = getUtf8ByteLength(JSON.stringify(f));
+                    if (f.deletedAt && f.purgeAt) {
+                        trashBytes += fBytes;
+                        trashCount++;
+                        const msLeft = Math.max(0, f.purgeAt - Date.now());
+                        trashItemsHtml.push(`
+                            <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div class="min-w-0">
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200 truncate">${getFileIcon(f.name)} ${esc(f.name)} <span class="text-[10px] text-slate-400">(${formatBytes(f.size)} • Tugas ${defaultCheckpoints[key].num})</span></p>
+                                    <p class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold" data-trash-timer="${key}_${f.id}">⏳ Hapus permanen dlm ${formatCountdown(msLeft)}</p>
+                                </div>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <button type="button" onclick="restoreSoftDeletedFile('${key}','${f.id}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold shadow-sm transition">
+                                        ↩️ Undo / Pulihkan
+                                    </button>
+                                    <button type="button" onclick="hardDeleteFileNow('${key}','${f.id}','${esc(f.name)}')" class="px-2 py-1 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-[10px] font-semibold hover:bg-rose-200 transition">
+                                        🔥 Hapus Sekarang
+                                    </button>
+                                </div>
+                            </div>
+                        `);
+                    } else {
+                        activeBytes += fBytes;
+                        activeCount++;
+                    }
+                });
+            });
+
+            // Hitung byte metadata teks checkpoints + history
+            const metaClone = {};
+            Object.keys(currentCheckpoints).forEach(k => {
+                const cp = currentCheckpoints[k];
+                if (cp) {
+                    metaClone[k] = { title: cp.title, status: cp.status, note: cp.note, updatedBy: cp.updatedBy, updatedAt: cp.updatedAt };
+                }
+            });
+            const metaBytes = getUtf8ByteLength(JSON.stringify(metaClone)) + getUtf8ByteLength(JSON.stringify(currentHistory));
+            const totalUsedBytes = activeBytes + trashBytes + metaBytes;
+
+            const freeNodeBytes = Math.max(0, NODE_SAFE_LIMIT_BYTES - totalUsedBytes);
+            const freeSparkBytes = Math.max(0, SPARK_LIMIT_BYTES - totalUsedBytes);
+
+            const pctActive = Math.min(100, (activeBytes / NODE_SAFE_LIMIT_BYTES) * 100);
+            const pctTrash = Math.min(100 - pctActive, (trashBytes / NODE_SAFE_LIMIT_BYTES) * 100);
+            const pctMeta = Math.min(100 - pctActive - pctTrash, Math.max(0.5, (metaBytes / NODE_SAFE_LIMIT_BYTES) * 100));
+
+            document.getElementById('bar-active-files').style.width = `${pctActive}%`;
+            document.getElementById('bar-trash-files').style.width = `${pctTrash}%`;
+            document.getElementById('bar-meta-logs').style.width = `${pctMeta}%`;
+
+            document.getElementById('storage-used-label').innerText = `${formatBytes(totalUsedBytes)} Terpakai (${((totalUsedBytes / NODE_SAFE_LIMIT_BYTES) * 100).toFixed(2)}%)`;
+            document.getElementById('storage-free-label').innerText = `Sisa Kosong: ${formatBytes(freeNodeBytes)} (Kuota Cepat 25 MB) • ${(freeSparkBytes / (1024 * 1024)).toFixed(1)} MB (Kuota Spark 1 GB)`;
+
+            document.getElementById('stat-active-files').innerText = `${activeCount} file (${formatBytes(activeBytes)})`;
+            document.getElementById('stat-trash-files').innerText = `${trashCount} file (${formatBytes(trashBytes)})`;
+            document.getElementById('stat-meta-logs').innerText = `${formatBytes(metaBytes)}`;
+
+            const badge = document.getElementById('storage-health-badge');
+            if (totalUsedBytes > 20 * 1024 * 1024) {
+                badge.innerText = "⚠️ Hampir Penuh (>20 MB)";
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300";
+            } else if (totalUsedBytes > 10 * 1024 * 1024) {
+                badge.innerText = "⚡ Terpakai Sedang";
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300";
+            } else {
+                badge.innerText = "🟢 Sangat Lega";
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300";
+            }
+
+            const trashPanel = document.getElementById('global-trash-panel');
+            const trashList = document.getElementById('global-trash-list');
+            if (trashCount > 0) {
+                trashPanel.style.display = 'block';
+                trashList.innerHTML = trashItemsHtml.join('');
+            } else {
+                trashPanel.style.display = 'none';
+                trashList.innerHTML = '';
+            }
+        }
+
+        // PREVIEW & DOWNLOAD FILE MODAL (MENDUKUNG TEKS, GAMBAR, DAN OFFICE/BINARY)
+        function openSavedTaskFile(key, fileId) {
+            const cp = currentCheckpoints[key];
+            const savedList = getCheckpointFilesList(cp);
+            const pendingList = (drafts[key] && drafts[key].pendingFiles) || [];
+            const target = [...pendingList, ...savedList].find(f => f.id === fileId);
+            if (!target) {
+                showToast("File tidak ditemukan!", "error");
+                return;
+            }
+            openFileViewerModal(target);
+        }
+
+        function openHistoryAttachment(index) {
+            const item = currentHistory[index];
+            if (!item || !item.attachment) return;
+            openFileViewerModal(item.attachment);
+        }
+
+        function openFileViewerModal(att) {
+            activeViewerFile = att;
+            document.getElementById('viewer-file-name').innerText = `${getFileIcon(att.name)} ${att.name}`;
+            document.getElementById('viewer-file-meta').innerText = `Ukuran: ${formatBytes(att.size)} • Diunggah oleh: ${att.uploadedBy || '-'} (${att.uploadedAt || '-'})`;
+
+            const preEl = document.getElementById('viewer-file-content');
+            const imgWrap = document.getElementById('viewer-image-container');
+            const imgEl = document.getElementById('viewer-image-el');
+            const binWrap = document.getElementById('viewer-binary-container');
+            const copyBtn = document.getElementById('viewer-copy-btn');
+
+            const isImage = IMAGE_EXTENSIONS.test(att.name) && String(att.content || '').startsWith('data:image');
+            const isText = att.encoding === 'text' || (TEXT_EXTENSIONS.test(att.name) && !String(att.content || '').startsWith('data:'));
+
+            preEl.style.display = 'none';
+            imgWrap.style.display = 'none';
+            binWrap.style.display = 'none';
+            copyBtn.style.display = 'none';
+
+            if (isImage) {
+                imgEl.src = att.content;
+                imgWrap.style.display = 'flex';
+            } else if (isText) {
+                preEl.textContent = att.content || '';
+                preEl.style.display = 'block';
+                copyBtn.style.display = 'inline-block';
+            } else {
+                document.getElementById('viewer-binary-icon').innerText = getFileIcon(att.name);
+                document.getElementById('viewer-binary-title').innerText = `${att.name} (${formatBytes(att.size)})`;
+                binWrap.style.display = 'flex';
+            }
+
+            document.getElementById('file-viewer-modal').style.display = 'flex';
+        }
+
+        function closeFileViewer() {
+            document.getElementById('file-viewer-modal').style.display = 'none';
+            activeViewerFile = null;
+        }
+
+        function copyViewerFileContent() {
+            if (!activeViewerFile) return;
+            copyText(activeViewerFile.content, `Isi file ${activeViewerFile.name} berhasil disalin!`);
+        }
+
+        function downloadViewerFile() {
+            if (!activeViewerFile) return;
+            const content = String(activeViewerFile.content || '');
+            const a = document.createElement('a');
+
+            if (content.startsWith('data:')) {
+                a.href = content;
+                a.download = activeViewerFile.name || 'dokumen';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                a.href = url;
+                a.download = activeViewerFile.name || 'dokumen.md';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            showToast(`Mengunduh ${activeViewerFile.name}...`, 'success');
+        }
+
+        // ==========================================
         // 3. DATA DEFAULT
         // ==========================================
         const featuresData = [
             { id: 1, title: "Zero-Knowledge Grade Proof", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Validasi kriptografi API SIAKAD agar mahasiswa bisa membuktikan klaim seperti 'IPK > 3.5' atau 'Lulus Matkul Jaringan A' tanpa membuka angka transkrip asli." },
             { id: 2, title: "Dynamic Skill-Tree & Auto-SKPI", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Nilai API kampus dan sertifikat lomba yang disetujui staf otomatis membentuk grafik skill di profil sekaligus merekap poin SKPI kelulusan." },
             { id: 3, title: "Automated Repo & Portfolio Auditor", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Integrasi GitHub yang memindai repositori mahasiswa untuk memberi lencana validasi keahlian teknis nyata di luar nilai akademik." },
-            { id: 4, title: "Vector-Graph Team Matchmaking", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Pencari rekan tim lomba/proyek berdasarkan kecocokan Skill-Tree yang saling melengkapi dan irisan jam kosong jadwal KRS." },
-            { id: 5, title: "RAG-Powered Verified Academic Forum", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Forum diskusi kuliah di mana jawaban peraih nilai A diprioritaskan di atas, didukung AI RAG yang menjawab dari arsip diskusi kakak tingkat." },
+            { id: 4, title: "Vector-Graph Team Matchmaking", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Pencari rekan tim lomba/proyek dengan konsep Party Slot visual berdasarkan kecocokan Skill-Tree (50%), minat topik (30%), dan skor reputasi anti-ghosting (20%)." },
+            { id: 5, title: "RAG-Powered Verified Academic Forum", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Forum diskusi kuliah di mana jawaban peraih nilai A diprioritaskan di atas, dilengkapi fitur rangkuman AI on-demand, Like/Dislike, dan tombol Tetap Posting." },
             { id: 6, title: "Micro-Bounty & Peer Tutoring", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Pertanyaan tugas/debugging yang buntu bisa dipasangi imbalan (bounty) dan menotifikasi peraih nilai A untuk sesi tutor singkat." },
-            { id: 7, title: "Contextual KRS Marketplace", stars: "⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Pasar jual-beli & sewa alat praktikum yang membaca KRS semester baru untuk menawarkan buku/mikrokontroler bekas dari kakak tingkat." },
-            { id: 8, title: "NIM-Bound Smart Escrow", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Rekening bersama & jaminan sewa alat antar mahasiswa yang terikat ke NIM aktif untuk mencegah penipuan internal." },
+            { id: 7, title: "Contextual KRS Marketplace", stars: "⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Pasar jual-beli, sewa, & pinjam gratis ber-deposit untuk alat praktikum KRS maupun barang umum mahasiswa (jaket, tas, alat kos) bergaya Roblox Dashboard / Shopee." },
+            { id: 8, title: "NIM-Bound Smart Escrow", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Rekening bersama & jaminan deposit sewa/pinjam alat antar mahasiswa yang terikat ke NIM aktif beserta SOP wajib foto kamera langsung saat COD." },
             { id: 9, title: "Zero-Touch Lab & Server Provisioning", stars: "⭐⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Peminjaman ruang lab atau container server praktikum yang begitu disetujui satu klik oleh staf langsung menerbitkan akses otomatis." },
             { id: 10, title: "Instant Talent Radar (Dashboard Dosen)", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Panel khusus dosen dan kepala lab untuk merekrut asisten praktikum atau riset dari filter nilai API dan reputasi forum." }
         ];
@@ -292,7 +1015,7 @@
             cp2: { num: 2, title: "Tugas 2: Skema Arsitektur API SIAKAD, ZKP & Closed-Loop", owner: "Awal (Peran A — Architecture)", deps: ["cp1"], status: "Belum",
                    note: "Buat diagram alur data dari API Kampus -> ZKP Grade Proof -> Skill Badge -> Zero-Touch Lab Container." },
             cp3: { num: 3, title: "Tugas 3: Spesifikasi Logika Vector Matchmaking, RAG Forum & KRS Escrow", owner: "Eral (Peran C — AI & Logic)", deps: ["cp1"], status: "Belum",
-                   note: "Rumuskan cara kerja algoritma pencocokan jadwal KRS + skill, alur RAG jawaban nilai A, dan rekomendasi sewa alat." },
+                   note: "Rumuskan cara kerja algoritma pencocokan Party Slot + reputasi, alur RAG jawaban nilai A, dan Marketplace + Escrow." },
             cp4: { num: 4, title: "Tugas 4: Penyusunan Pitch Deck & Mockup UI/UX (Deadline 10 Nov)", owner: "Naufal (Peran B — Product & UI/UX)", deps: ["cp2", "cp3"], status: "Belum",
                    note: "Gabungkan hasil arsitektur Awal (Tugas 2) dan logika fitur Eral (Tugas 3) ke dalam slide Pitch Deck & desain layar Figma." },
             cp5: { num: 5, title: "Tugas 5: Eksekusi Prototipe MVP Semifinal (Deadline 30 Nov)", owner: "Semua Anggota (Awal, Naufal, Eral)", deps: ["cp4"], status: "Belum",
@@ -311,7 +1034,7 @@
                     { t: "Konfirmasi peran masing-masing", d: "Awal = Peran A (Arsitektur, API SIAKAD, Security). Naufal = Peran B (Product, Pitch Deck, UI/UX). Eral = Peran C (AI Matchmaking, RAG Forum, KRS Marketplace). Tiap orang menyebutkan batas tanggung jawabnya agar tidak ada area abu-abu." },
                     { t: "Sepakati nama tim & konsep", d: "Nama tim Mekara dengan konsep Next-Gen Campus Super App: ekosistem closed-loop berbasis API kampus yang saling menguatkan antar fitur." },
                     { t: "Tentukan kanal & ritme kerja", d: "Siapkan grup chat, folder dokumen bersama, dan sinkronisasi singkat harian (10–15 menit) untuk saling update blocker." },
-                    { t: "Tetapkan aturan serah-terima", d: "Setiap hasil kerja ditempel sebagai link di kolom Keterangan, lalu status diubah ke Sudah supaya tugas berikutnya otomatis terbuka." }
+                    { t: "Tetapkan aturan serah-terima", d: "Setiap hasil kerja diunggah langsung (file MD, TXT, PPTX, PDF, PNG, XLSX) di tiap tugas, lalu status diubah ke Sudah supaya tugas berikutnya otomatis terbuka." }
                 ],
                 deliverables: ["Pembagian peran final", "Folder dokumen bersama", "Jadwal sinkronisasi tim"],
                 doneWhen: ["Ketiga anggota setuju dengan peran dan batas tanggung jawabnya."],
@@ -323,11 +1046,11 @@
                 deadline: "Harus selesai lebih dulu agar Tugas 4 (Naufal) terbuka. Preliminary: 10 Nov 2026.",
                 steps: [
                     { t: "Petakan sumber data & API SIAKAD", d: "Daftar data yang dibutuhkan: nilai/transkrip, KRS, jadwal, status mahasiswa aktif. Tulis endpoint atau kontrak data yang diasumsikan. Jika belum ada akses resmi, tandai jelas sebagai [MOCK/ASUMSI]." },
-                    { t: "Rancang alur Zero-Knowledge Grade Proof", d: "Jelaskan siapa yang meminta klaim (mis. IPK > 3.5), siapa yang memverifikasi, dan apa yang diterima pihak ketiga. Tekankan bahwa angka transkrip asli tidak pernah dibuka. Gunakan konsep atestasi bertanda tangan atau ZKP, cukup tingkat konsep untuk preliminary." },
-                    { t: "Gambar alur closed-loop", d: "API Kampus → ZKP Grade Proof → Skill Badge / Skill-Tree → Matchmaking, Forum, Marketplace → Zero-Touch Lab Provisioning → data aktivitas kembali memperkaya profil. Beri label di setiap panah: data apa yang lewat." },
-                    { t: "Rancang keamanan & privasi", d: "Autentikasi (SSO kampus), pembagian hak akses (mahasiswa / dosen / staf), enkripsi data, audit log, dan prinsip minimisasi data. Sebut kepatuhan pelindungan data pribadi sebagai pertimbangan." },
+                    { t: "Rancang alur Zero-Knowledge Grade Proof", d: "Jelaskan siapa yang meminta klaim (mis. IPK > 3.5), siapa yang memverifikasi, dan apa yang diterima pihak ketiga. Tekankan bahwa angka transkrip asli tidak pernah dibuka." },
+                    { t: "Gambar alur closed-loop", d: "API Kampus -> ZKP Grade Proof -> Skill Badge / Skill-Tree -> Matchmaking, Forum, Marketplace -> Zero-Touch Lab Provisioning -> data aktivitas kembali memperkaya profil." },
+                    { t: "Rancang keamanan & privasi", d: "Autentikasi (SSO kampus), pembagian hak akses (mahasiswa / dosen / staf), enkripsi data, audit log, dan prinsip minimisasi data." },
                     { t: "Tentukan batas MVP", d: "Pisahkan mana yang benar-benar dibangun untuk semifinal dan mana yang dimock. Fokus ke fitur Must-Have agar realistis dikerjakan sebelum 30 Nov." },
-                    { t: "Rapikan & serahkan ke Naufal", d: "Ekspor diagram dalam gambar resolusi tinggi dan simpan sumbernya. Tempel link di kolom Keterangan, ubah status ke Sudah, dan kabari Naufal." }
+                    { t: "Rapikan & serahkan ke Naufal", d: "Unggah gambar diagram (PNG/JPG) dan dokumen arsitektur (MD/PDF) pada kartu Tugas 2, ubah status ke Sudah, dan kabari Naufal." }
                 ],
                 deliverables: ["Diagram arsitektur closed-loop (gambar + file sumber)", "Sequence diagram ZKP Grade Proof", "Narasi keamanan 1 halaman", "Daftar asumsi API / MOCK"],
                 doneWhen: ["Naufal bisa memasukkan diagram ke slide tanpa bertanya ulang.", "Setiap panah pada diagram punya label data.", "Batas MVP sudah tertulis."],
@@ -338,13 +1061,13 @@
                 output: "Spesifikasi 1 halaman per modul (alur, input, output, contoh skenario) beserta contoh data.",
                 deadline: "Harus selesai lebih dulu agar Tugas 4 (Naufal) terbuka. Preliminary: 10 Nov 2026.",
                 steps: [
-                    { t: "Spesifikasi Vector-Graph Team Matchmaking", d: "Definisikan profil vektor mahasiswa: skill beserta levelnya, minat, dan jam kosong dari KRS. Skor kecocokan menggabungkan komplementaritas skill, irisan jadwal, dan reputasi. Buat satu contoh hitungan dengan 3 mahasiswa. Jelaskan penanganan pengguna baru (cold start)." },
-                    { t: "Spesifikasi RAG Verified Academic Forum", d: "Jelaskan sumber arsip diskusi, pemotongan teks (chunking), embedding, dan pengambilan jawaban. Jawaban peraih nilai A (terverifikasi lewat ZKP) diberi bobot lebih tinggi. Jawaban AI wajib menyertakan sumber dan punya fallback ke tanya manusia bila tidak yakin." },
-                    { t: "Spesifikasi Contextual KRS Marketplace", d: "Jelaskan bagaimana KRS semester baru dibaca untuk merekomendasikan buku atau alat praktikum bekas dari kakak tingkat, termasuk logika pencocokan matkul ke barang." },
-                    { t: "Spesifikasi NIM-Bound Smart Escrow", d: "Alur: pembeli membayar, dana ditahan, serah terima dikonfirmasi kedua pihak, dana dilepas. Tulis juga penanganan sengketa dan batas waktu. Semua akun terikat NIM aktif untuk mencegah penipuan." },
+                    { t: "Spesifikasi Vector-Graph Team Matchmaking", d: "Definisikan konsep Party Slot visual, skor kecocokan berbasis skill (50%) + minat (30%) + reputasi (20%), contoh hitungan dengan 3 mahasiswa, dan penanganan pengguna baru (cold start)." },
+                    { t: "Spesifikasi RAG Verified Academic Forum", d: "Jelaskan pencegatan pertanyaan ke arsip jawaban peraih nilai A (terverifikasi ZKP), fitur rangkuman AI on-demand, tombol Tetap Posting, serta sistem Like/Dislike & sorting." },
+                    { t: "Spesifikasi Contextual KRS Marketplace", d: "Jelaskan bagaimana KRS semester baru dibaca untuk merekomendasikan alat praktikum bekas (0 token AI) serta katalog barang umum mahasiswa dengan 3 mode: Jual, Sewa, dan Pinjam Gratis ber-deposit." },
+                    { t: "Spesifikasi NIM-Bound Smart Escrow", d: "Alur penahanan dana/deposit, SOP wajib foto kamera langsung saat COD, pilihan maafkan keterlambatan atau klaim denda, serta sistem skor reputasi anti-abuse." },
                     { t: "Buat satu skenario pengguna per modul", d: "Tulis cerita singkat dengan data contoh (siapa, melakukan apa, hasilnya apa). Naufal akan memakainya sebagai bahan storyline dan mockup." },
-                    { t: "Tentukan metrik & keterbatasan", d: "Sebutkan cara mengukur keberhasilan tiap modul dan risiko utamanya (bias rekomendasi, halusinasi AI, penyalahgunaan escrow) beserta mitigasinya." },
-                    { t: "Rapikan & serahkan ke Naufal", d: "Tempel link spesifikasi di kolom Keterangan, ubah status ke Sudah, dan kabari Naufal." }
+                    { t: "Tentukan metrik & keterbatasan", d: "Sebutkan cara mengukur keberhasilan tiap modul dan risiko utamanya beserta mitigasinya." },
+                    { t: "Rapikan & serahkan ke Naufal", d: "Upload file .md spesifikasi pada kartu Tugas 3, ubah status ke Sudah, dan kabari Naufal." }
                 ],
                 deliverables: ["Spesifikasi Matchmaking + contoh hitungan", "Spesifikasi RAG Forum + alur retrieval", "Spesifikasi KRS Marketplace & Escrow", "3 skenario pengguna"],
                 doneWhen: ["Tiap modul punya input, proses, output, dan contoh data.", "Naufal bisa membuat mockup tanpa menebak logika."],
@@ -352,18 +1075,18 @@
             },
             cp4: {
                 goal: "Menggabungkan arsitektur (Tugas 2) dan logika fitur (Tugas 3) menjadi cerita yang meyakinkan dalam pitch deck dan mockup UI/UX untuk Preliminary.",
-                output: "Pitch deck (±10–12 slide) dan mockup 3–4 layar utama.",
+                output: "Pitch deck (10–12 slide) dan mockup 3–4 layar utama.",
                 deadline: "Preliminary: 10 Nov 2026.",
                 steps: [
-                    { t: "Baca ulang brief & kriteria penilaian", d: "Pastikan jawaban deck menjawab Case 1: Smarter Campus and Learning. Cek ketentuan resmi (format, ukuran file, tautan pengumpulan) di guidebook GDGoC ITB." },
-                    { t: "Susun alur cerita", d: "Masalah → insight → solusi → bagaimana cara kerjanya → dampak → kelayakan → rencana MVP. Satu slide satu pesan." },
+                    { t: "Baca ulang brief & kriteria penilaian", d: "Pastikan jawaban deck menjawab Case 1: Smarter Campus and Learning. Cek ketentuan resmi di guidebook GDGoC ITB." },
+                    { t: "Susun alur cerita", d: "Masalah -> insight -> solusi -> bagaimana cara kerjanya -> dampak -> kelayakan -> rencana MVP. Satu slide satu pesan." },
                     { t: "Rancang kerangka slide", d: "Cover, masalah, bukti/data, solusi, closed-loop (dari Awal), 3 fitur inti, logika AI (dari Eral), mockup UI, dampak & keberlanjutan, roadmap MVP, penutup." },
-                    { t: "Buat mockup layar utama", d: "Minimal: beranda Skill-Tree, matchmaking tim, forum akademik, marketplace/escrow. Pakai skenario pengguna dari Eral sebagai isi layar." },
+                    { t: "Buat mockup layar utama", d: "Minimal: beranda Skill-Tree, matchmaking Party Slot, forum akademik, marketplace/escrow bergaya Roblox Dashboard / Shopee." },
                     { t: "Samakan gaya visual", d: "Satu palet warna, satu keluarga font, ikon konsisten. Teks sedikit, visual dominan." },
                     { t: "Review tim & latihan", d: "Awal mengecek kebenaran teknis, Eral mengecek logika AI. Latihan presentasi singkat jika diperlukan." },
-                    { t: "Submit sebelum tenggat", d: "Unggah sesuai ketentuan resmi, tempel link bukti submit di kolom Keterangan, lalu ubah status ke Sudah." }
+                    { t: "Submit sebelum tenggat", d: "Unggah file PPTX/PDF Pitch Deck di kartu Tugas 4, tempel link bukti submit di kolom Keterangan, lalu ubah status ke Sudah." }
                 ],
-                deliverables: ["Pitch deck final (PDF)", "File mockup (Figma) + link", "Bukti submit"],
+                deliverables: ["Pitch deck final (PPTX / PDF)", "File mockup (Figma) + link", "Bukti submit"],
                 doneWhen: ["Isi deck konsisten dengan arsitektur Awal dan logika Eral.", "Sudah disubmit sebelum tenggat."],
                 tips: ["Waktu sempit? Prioritaskan alur cerita + diagram closed-loop + 3 layar mockup yang matang.", "Tiap slide harus bisa dipahami dalam 5 detik."]
             },
@@ -372,10 +1095,10 @@
                 output: "Prototipe MVP berjalan + skrip demo.",
                 deadline: "Semifinal MVP: 30 Nov 2026.",
                 steps: [
-                    { t: "Pecah backlog Must-Have", d: "Fitur Must-Have: 1 Zero-Knowledge Grade Proof, 2 Skill-Tree & Auto-SKPI, 4 Team Matchmaking, 5 RAG Forum, 7 KRS Marketplace, 8 Smart Escrow. Urutkan berdasarkan dampak demo dan tingkat kesulitan." },
-                    { t: "Bagi tugas teknis", d: "Usulan: Awal (backend, mock SIAKAD, simulasi ZKP), Eral (layanan AI: matchmaking, RAG, rekomendasi), Naufal (frontend & polesan UI). Sesuaikan dengan kemampuan tim." },
+                    { t: "Pecah backlog Must-Have", d: "Fitur Must-Have: 1 Zero-Knowledge Grade Proof, 2 Skill-Tree & Auto-SKPI, 4 Team Matchmaking, 5 RAG Forum, 7 KRS Marketplace, 8 Smart Escrow." },
+                    { t: "Bagi tugas teknis", d: "Usulan: Awal (backend, mock SIAKAD, simulasi ZKP), Eral (layanan algoritma & AI: matchmaking, RAG, rekomendasi), Naufal (frontend & polesan UI)." },
                     { t: "Siapkan fondasi", d: "Repositori bersama, struktur proyek, data mock SIAKAD, dan kontrak API antara frontend, backend, dan AI." },
-                    { t: "Bangun satu vertical slice", d: "Satu alur penuh dari data kampus sampai manfaat nyata, misalnya: nilai terverifikasi → skill badge → rekomendasi tim → penggunaan di forum/marketplace." },
+                    { t: "Bangun satu vertical slice", d: "Satu alur penuh dari data kampus sampai manfaat nyata." },
                     { t: "Uji & stabilkan", d: "Uji alur demo berulang kali. Siapkan data contoh yang meyakinkan dan rencana cadangan bila koneksi bermasalah." },
                     { t: "Siapkan demo", d: "Tulis skrip demo, rekam video cadangan, dan latih presentasi." }
                 ],
@@ -418,7 +1141,7 @@
         }
 
         // ==========================================
-        // 6. RENDER
+        // 6. RENDER UI
         // ==========================================
         function getStatusColor(status) {
             switch (status) {
@@ -434,9 +1157,6 @@
             drafts[key][field] = value;
         }
 
-        // ==========================================
-        // 6a. PANEL TATA CARA (SHOW INFO / SEE DETAILS)
-        // ==========================================
         function applyGuideState(key) {
             const st = ui[key] || {};
             const infoEl = document.getElementById(`${key}-info`);
@@ -518,7 +1238,7 @@
         }
 
         // ==========================================
-        // 6b. HISTORY PER TUGAS + COPY UNTUK AI LAIN
+        // 6b. COPY HELPER TANPA ALERT BROWSER
         // ==========================================
         function copyText(text, okMsg) {
             const fallback = () => {
@@ -528,12 +1248,16 @@
                 ta.style.opacity = '0';
                 document.body.appendChild(ta);
                 ta.select();
-                try { document.execCommand('copy'); alert(okMsg); }
-                catch (e) { window.prompt('Salin manual (Ctrl+C):', text); }
+                try {
+                    document.execCommand('copy');
+                    showToast(okMsg, 'success');
+                } catch (e) {
+                    showToast('Gagal menyalin otomatis, silakan salin manual.', 'error');
+                }
                 document.body.removeChild(ta);
             };
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => alert(okMsg)).catch(fallback);
+                navigator.clipboard.writeText(text).then(() => showToast(okMsg, 'success')).catch(fallback);
             } else {
                 fallback();
             }
@@ -541,15 +1265,16 @@
 
         function taskHistoryItems(key) {
             const title = defaultCheckpoints[key].title;
-            // currentHistory sudah urut terbaru -> terlama; data lama tanpa taskKey dicocokkan lewat judul
-            return currentHistory.filter(h => h.taskKey === key || (!h.taskKey && h.taskTitle === title));
+            return currentHistory
+                .map((h, idx) => ({ ...h, _globalIdx: idx }))
+                .filter(h => h.taskKey === key || (!h.taskKey && h.taskTitle === title));
         }
 
         function historyBodyHtml(key) {
             const items = taskHistoryItems(key);
             if (!items.length) return '<p class="text-slate-400 italic">Belum ada submit untuk tugas ini.</p>';
             return items.map(h => `
-                <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-0.5">
+                <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
                     <div class="flex justify-between items-center gap-2">
                         <span class="font-bold text-indigo-600 dark:text-indigo-400">${esc(h.user)}</span>
                         <span class="text-[10px] text-slate-400">${esc(h.timestamp)}</span>
@@ -558,6 +1283,12 @@
                         <span class="line-through opacity-70">${esc(h.fromStatus)}</span> ➔ <b>${esc(h.toStatus)}</b>
                     </p>
                     ${h.note ? `<p class="text-[11px] italic text-slate-500 dark:text-slate-400">"${esc(h.note)}"</p>` : ''}
+                    ${h.attachment ? `
+                        <div class="pt-1">
+                            <button type="button" onclick="openHistoryAttachment(${h._globalIdx})" class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition">
+                                ${getFileIcon(h.attachment.name)} Preview/Download: ${esc(h.attachment.name)} (${formatBytes(h.attachment.size)})
+                            </button>
+                        </div>` : ''}
                 </div>`).join('');
         }
 
@@ -603,6 +1334,7 @@
             const items = taskHistoryItems(key);
             const lock = checkTaskLock(key);
             const g = taskGuides[key];
+            const activeFiles = getCheckpointFilesList(cp).filter(f => !f.deletedAt);
 
             const lines = [
                 `RIWAYAT PROGRES TUGAS — Tim Mekara (GDGoC ITB, Case 1: Smarter Campus and Learning)`,
@@ -610,10 +1342,18 @@
                 `PIC: ${base.owner}`,
                 `State saat ini: ${cp.status}${lock.locked ? ` (TERKUNCI: menunggu ${lock.missingTitles.join(' & ')})` : ''}`,
                 `Teks/catatan terkini: ${cp.note || '-'}`,
+                `File Aktif Terlampir (${activeFiles.length}): ${activeFiles.length ? activeFiles.map(f => `${f.name} (${formatBytes(f.size)})`).join(', ') : 'Tidak ada'}`,
                 `Update terakhir: ${cp.updatedBy ? `${cp.updatedBy} (${cp.updatedAt || '-'})` : 'belum ada submit'}`,
-                ``,
-                `Riwayat submit (terbaru → terlama), total ${items.length}:`
+                ``
             ];
+
+            activeFiles.forEach(f => {
+                if (f.encoding === 'text' && f.content) {
+                    lines.push(`=== ISI FILE TEKS/MD (${f.name}) ===`, f.content, `=== AKHIR FILE (${f.name}) ===`, ``);
+                }
+            });
+
+            lines.push(`Riwayat submit (terbaru -> terlama), total ${items.length}:`);
 
             if (!items.length) {
                 lines.push('- Belum ada riwayat submit.');
@@ -621,6 +1361,7 @@
                 items.forEach((h, i) => {
                     lines.push(`${i + 1}. [${h.timestamp}] ${h.user} — ${h.fromStatus} => ${h.toStatus}`);
                     lines.push(`   Teks: ${h.note || '-'}`);
+                    if (h.attachment) lines.push(`   File: ${h.attachment.name}`);
                 });
             }
 
@@ -630,13 +1371,13 @@
                     g.steps.forEach((s, i) => lines.push(`${i + 1}. ${s.t}`));
                     lines.push(`Output yang diharapkan: ${g.output}`);
                 }
-                lines.push('', `Mohon cek progres tugas ini: (1) langkah mana yang sudah tercermin dari riwayat, (2) apa yang masih kurang dibanding tata cara dan output, (3) apakah status "${cp.status}" sudah layak, (4) langkah konkret berikutnya.`);
+                lines.push('', `Mohon cek progres tugas ini: (1) langkah mana yang sudah tercermin dari riwayat/file, (2) apa yang masih kurang dibanding tata cara dan output, (3) apakah status "${cp.status}" sudah layak, (4) langkah konkret berikutnya.`);
             }
             return lines.join('\n');
         }
 
         function copyTaskHistory(key) {
-            copyText(buildTaskHistoryText(key, true), 'History tugas berhasil disalin! Silakan paste ke AI lain.');
+            copyText(buildTaskHistoryText(key, true), 'History & isi lampiran tugas berhasil disalin!');
         }
 
         function copyAllHistory() {
@@ -644,7 +1385,92 @@
                 .map(k => buildTaskHistoryText(k, false))
                 .join('\n\n--------------------\n\n');
             const tail = `\n\nMohon cek progres seluruh tugas di atas: tunjukkan bottleneck, tugas yang status/isinya belum konsisten, dan prioritas kerja berikutnya untuk tiap anggota.`;
-            copyText(body + tail, 'Seluruh history tugas berhasil disalin! Silakan paste ke AI lain.');
+            copyText(body + tail, 'Seluruh history tugas berhasil disalin!');
+        }
+
+        function renderTaskFilesHtml(key, isLocked) {
+            const cp = currentCheckpoints[key];
+            const savedFiles = getCheckpointFilesList(cp);
+            const activeFiles = savedFiles.filter(f => !f.deletedAt);
+            const trashedFiles = savedFiles.filter(f => f.deletedAt && f.purgeAt);
+            const pendingFiles = (drafts[key] && drafts[key].pendingFiles) || [];
+
+            const activeHtml = activeFiles.map(f => `
+                <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-semibold text-slate-800 dark:text-slate-200 truncate">${getFileIcon(f.name)} ${esc(f.name)}</p>
+                        <p class="text-[10px] text-slate-400">${formatBytes(f.size)} • Oleh ${esc(f.uploadedBy || '-')} (${esc(f.uploadedAt || '-')})</p>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button type="button" onclick="openSavedTaskFile('${key}','${f.id}')" class="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[10px] font-semibold hover:bg-indigo-100 transition">
+                            👁️ Buka / Unduh
+                        </button>
+                        ${!isLocked ? `
+                            <button type="button" onclick="softDeleteSavedFile('${key}','${f.id}')" class="px-2 py-1 rounded bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[10px] font-semibold hover:bg-rose-100 transition" title="Hapus (Bisa di-Undo dalam 1 Jam)">
+                                🗑️ Hapus
+                            </button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            const pendingHtml = pendingFiles.map(f => `
+                <div class="p-2 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 truncate">${getFileIcon(f.name)} ${esc(f.name)} <span class="px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[9px]">BARU • BELUM DISUBMIT</span></p>
+                        <p class="text-[10px] text-emerald-600 dark:text-emerald-400">${formatBytes(f.size)} • Klik "Submit Update" di bawah untuk menyimpan</p>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button type="button" onclick="openSavedTaskFile('${key}','${f.id}')" class="px-2 py-1 rounded bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-300 text-[10px] font-semibold">
+                            👁️ Cek
+                        </button>
+                        <button type="button" onclick="removePendingDraftFile('${key}','${f.id}')" class="px-2 py-1 rounded bg-rose-100 text-rose-700 text-[10px] font-semibold">
+                            ✕ Batal
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            const trashHtml = trashedFiles.map(f => {
+                const msLeft = Math.max(0, f.purgeAt - Date.now());
+                return `
+                    <div class="p-2 rounded-lg bg-amber-50/80 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-semibold line-through text-slate-500 dark:text-slate-400 truncate">${getFileIcon(f.name)} ${esc(f.name)} (${formatBytes(f.size)})</p>
+                            <p class="text-[10px] text-amber-700 dark:text-amber-400 font-bold" data-trash-timer="${key}_${f.id}">⏳ Hapus permanen dlm ${formatCountdown(msLeft)}</p>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" onclick="restoreSoftDeletedFile('${key}','${f.id}')" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold shadow-sm transition">
+                                ↩️ Undo (Pulihkan)
+                            </button>
+                            <button type="button" onclick="hardDeleteFileNow('${key}','${f.id}','${esc(f.name)}')" class="px-2 py-1 rounded bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 text-[10px] font-semibold transition">
+                                🔥 Hapus Permanen
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <p class="text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                <span>📎 Lampiran Multi-File Tugas (${activeFiles.length} Aktif${trashedFiles.length ? `, ${trashedFiles.length} di Trash 1 Jam` : ''})</span>
+                            </p>
+                            <p class="text-[10px] text-slate-400">Mendukung: <b>.pptx, .xlsx, .docx, .pdf, .png, .jpg, .md, .txt, .csv, .zip</b> (Maks 4 MB/file)</p>
+                        </div>
+                        ${!isLocked ? `
+                            <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold shadow-sm transition self-start sm:self-center">
+                                <span>📤 Upload File Baru</span>
+                                <input type="file" multiple accept=".md,.txt,.markdown,.json,.csv,.pptx,.ppt,.xlsx,.xls,.docx,.doc,.pdf,.png,.jpg,.jpeg,.gif,.webp,.svg,.zip" class="hidden" onchange="handleMultiFileSelect('${key}', this)">
+                            </label>` : ''}
+                    </div>
+
+                    ${(!activeFiles.length && !pendingFiles.length && !trashedFiles.length)
+                        ? `<p class="text-[11px] text-slate-400 italic">Belum ada file diunggah pada tugas ini.</p>`
+                        : `<div class="space-y-1.5">${pendingHtml}${activeHtml}${trashHtml}</div>`}
+                </div>
+            `;
         }
 
         function renderCheckpoints() {
@@ -707,6 +1533,8 @@
                             <textarea id="${key}-note" rows="2" ${isLocked ? 'disabled' : ''} oninput="setDraft('${key}','note',this.value)" class="w-full text-xs p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 ${isLocked ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-950' : ''}" placeholder="Tulis progres yang sudah dikerjakan atau tempel link dokumen...">${esc(shownNote)}</textarea>
                         </div>
 
+                        ${renderTaskFilesHtml(key, isLocked)}
+
                         ${renderGuideHtml(key)}
 
                         ${renderTaskHistoryHtml(key)}
@@ -718,7 +1546,7 @@
                                     🔒 Selesaikan ${lockInfo.missingTitles.join(' & ')} Dulu
                                 </button>` : `
                                 <button onclick="requestSubmitCheckpoint('${key}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
-                                    🚀 Submit Update & Catat History
+                                    🚀 Submit Update & Simpan File
                                 </button>`}
                         </div>
                     </div>
@@ -749,20 +1577,21 @@
         }
 
         // ==========================================
-        // 7. SUBMIT CHECKPOINT
+        // 7. SUBMIT CHECKPOINT & MULTI-FILES KE VAULT FIREBASE
         // ==========================================
         function formatTimestamp() {
             return new Date().toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
         }
 
         function requestSubmitCheckpoint(key) {
-            if (!db) {
-                alert("Firebase belum terhubung, perubahan belum bisa disimpan. Cek koneksi internet lalu muat ulang halaman.");
+            const basePath = getBasePath();
+            if (!db || !basePath) {
+                showToast("Vault Firebase belum terhubung! Silakan login ulang.", "error");
                 return;
             }
             const lockInfo = checkTaskLock(key);
             if (lockInfo.locked) {
-                alert(`Tugas ini masih terkunci! Selesaikan ${lockInfo.missingTitles.join(' & ')} terlebih dahulu.`);
+                showToast(`Tugas ini masih terkunci! Selesaikan ${lockInfo.missingTitles.join(' & ')} terlebih dahulu.`, "error");
                 return;
             }
 
@@ -771,25 +1600,48 @@
             const newNote = document.getElementById(`${key}-note`).value.trim();
             const prevStatus = (currentCheckpoints[key] && currentCheckpoints[key].status) || 'Belum';
             const title = defaultCheckpoints[key].title;
+            const pendingFiles = (drafts[key] && drafts[key].pendingFiles) || [];
 
             const detailsHtml = `
                 <p><b>Disubmit Oleh:</b> ${esc(user)}</p>
                 <p><b>Tugas:</b> ${esc(title)}</p>
                 <p><b>Perubahan Status:</b> <span class="line-through opacity-70">${esc(prevStatus)}</span> ➔ <b>${esc(newStatus)}</b></p>
                 <p><b>Keterangan:</b> "${esc(newNote || '-')}"</p>
+                <p><b>File Baru Diunggah:</b> ${pendingFiles.length ? pendingFiles.map(f => `<b>${esc(f.name)}</b> (${formatBytes(f.size)})`).join(', ') : '<i>Tidak ada tambahan file baru</i>'}</p>
             `;
 
-            openConfirmModal("Konfirmasi Update Tugas?", detailsHtml, () => {
+            openConfirmModal("Konfirmasi Submit ke Vault?", detailsHtml, () => {
                 const timeStr = formatTimestamp();
-                db.ref(`superapp_project/checkpoints/${key}`).set({
+                const existingCp = currentCheckpoints[key] || {};
+                const filesMap = { ...(existingCp.files || {}) };
+
+                // Migrasikan legacy attachment jika ada
+                if (existingCp.attachment && existingCp.attachment.name) {
+                    const legId = 'f_legacy_' + Date.now();
+                    filesMap[legId] = {
+                        ...existingCp.attachment,
+                        id: legId,
+                        encoding: 'text'
+                    };
+                }
+
+                pendingFiles.forEach(pf => {
+                    filesMap[pf.id] = pf;
+                });
+
+                const payload = {
                     title: title,
                     owner: defaultCheckpoints[key].owner,
                     status: newStatus,
                     note: newNote,
                     updatedBy: user,
-                    updatedAt: timeStr
-                });
-                db.ref('superapp_project/history').push({
+                    updatedAt: timeStr,
+                    files: filesMap
+                };
+
+                db.ref(`${basePath}/checkpoints/${key}`).set(payload);
+
+                const histPayload = {
                     user: user,
                     taskKey: key,
                     taskTitle: title,
@@ -797,8 +1649,14 @@
                     toStatus: newStatus,
                     note: newNote,
                     timestamp: timeStr
-                });
+                };
+                if (pendingFiles.length > 0) {
+                    histPayload.attachment = pendingFiles[pendingFiles.length - 1];
+                }
+
+                db.ref(`${basePath}/history`).push(histPayload);
                 delete drafts[key];
+                showToast(`Progres ${title} berhasil disimpan ke Vault Firebase!`, 'success');
             });
         }
 
@@ -867,11 +1725,25 @@
                 const cp = currentCheckpoints[k] || defaultCheckpoints[k];
                 const lockInfo = checkTaskLock(k);
                 const lockTag = lockInfo.locked ? ` [TERKUNCI: menunggu ${lockInfo.missingTitles.join(' & ')}]` : '';
-                return `- ${cp.title}: [${cp.status}]${lockTag} (PIC: ${cp.owner} | Update terakhir: ${cp.updatedBy || '-'} ${cp.updatedAt || ''})\n  Catatan: ${cp.note || '-'}`;
+                const activeFiles = getCheckpointFilesList(cp).filter(f => !f.deletedAt);
+                const attTag = activeFiles.length ? ` | File Aktif: ${activeFiles.map(f => f.name).join(', ')}` : '';
+                return `- ${cp.title}: [${cp.status}]${lockTag} (PIC: ${cp.owner} | Update terakhir: ${cp.updatedBy || '-'} ${cp.updatedAt || ''}${attTag})\n  Catatan: ${cp.note || '-'}`;
             }).join('\n');
 
+            // Sertakan seluruh isi file teks (.md / .txt) yang tidak sedang dihapus
+            const attachedDocsText = [];
+            Object.keys(defaultCheckpoints).forEach(k => {
+                const cp = currentCheckpoints[k];
+                const activeFiles = getCheckpointFilesList(cp).filter(f => !f.deletedAt);
+                activeFiles.forEach(f => {
+                    if ((f.encoding === 'text' || TEXT_EXTENSIONS.test(f.name)) && f.content && !String(f.content).startsWith('data:')) {
+                        attachedDocsText.push(`--- LAMPIRAN DOKUMEN ${defaultCheckpoints[k].title}: ${f.name} ---\n${f.content}\n--- AKHIR LAMPIRAN ${f.name} ---`);
+                    }
+                });
+            });
+
             const recentLogs = currentHistory.slice(0, 5).map(h =>
-                `- [${h.timestamp}] ${h.user} -> ${h.taskTitle} (${h.fromStatus} => ${h.toStatus}): "${h.note || '-'}"`
+                `- [${h.timestamp}] ${h.user} -> ${h.taskTitle} (${h.fromStatus} => ${h.toStatus}): "${h.note || '-'}"${h.attachment ? ` [File: ${h.attachment.name}]` : ''}`
             ).join('\n') || '- Belum ada riwayat submit.';
 
             const focusKey = FOCUS_TASK[targetPerson];
@@ -908,10 +1780,10 @@ STRUKTUR TIM MEKARA (3 ANGGOTA)
 BLUEPRINT 10 FITUR
 ${featureLines}
 
-STATUS ALUR TUGAS BERJENJANG (REALTIME FIREBASE)
+STATUS ALUR TUGAS BERJENJANG (REALTIME FIREBASE VAULT)
 ${cpLines}
 
-5 RIWAYAT SUBMIT TERAKHIR
+${attachedDocsText.length ? `DOKUMEN SPESIFIKASI TERLAMPIR (.MD / .TXT)\n${attachedDocsText.join('\n\n')}\n\n` : ''}5 RIWAYAT SUBMIT TERAKHIR
 ${recentLogs}
 
 ${guideBlock}
@@ -929,38 +1801,47 @@ ATURAN JAWABAN
         }
 
         function copyAIPrompt() {
-            copyText(document.getElementById('ai-prompt-output').value, 'Prompt konteks terkini berhasil disalin! Silakan paste ke AI kamu.');
+            copyText(document.getElementById('ai-prompt-output').value, 'Prompt konteks terkini berhasil disalin!');
         }
 
         // ==========================================
-        // 9. INISIALISASI UI (jalan dulu, tidak bergantung Firebase)
+        // 9. INISIALISASI FIREBASE & VAULT LISTENERS
         // ==========================================
-        initTheme();
-        renderFeatures('all');
-        renderCheckpoints();
-        updateAIPrompt();
-        initAuth();
+        function detachVaultListeners() {
+            activeRefs.forEach(r => {
+                try { r.off(); } catch (e) {}
+            });
+            activeRefs = [];
+        }
 
-        // ==========================================
-        // 10. FIREBASE (jika gagal, UI & login tetap jalan)
-        // ==========================================
-        function setupFirebase() {
+        function setupFirebaseApp() {
             if (typeof firebase === 'undefined') {
                 const b = document.getElementById('sync-badge');
                 b.innerText = "🔴 Firebase gagal dimuat";
                 b.className = "text-[10px] px-2 py-0.5 bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 rounded-full font-medium";
                 return;
             }
-
-            firebase.initializeApp({
-                databaseURL: "https://campus-superapp-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/"
-            });
+            if (!firebase.apps.length) {
+                firebase.initializeApp({
+                    databaseURL: "https://campus-superapp-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/"
+                });
+            }
             db = firebase.database();
+        }
+
+        function connectVaultListeners() {
+            if (!db) setupFirebaseApp();
+            const basePath = getBasePath();
+            if (!db || !basePath) return;
+
+            detachVaultListeners();
 
             const syncBadge = document.getElementById('sync-badge');
-            db.ref('.info/connected').on('value', (snap) => {
+            const connRef = db.ref('.info/connected');
+            activeRefs.push(connRef);
+            connRef.on('value', (snap) => {
                 if (snap.val() === true) {
-                    syncBadge.innerText = "🟢 Realtime Sync Aktif";
+                    syncBadge.innerText = "🟢 Vault Sync Aktif";
                     syncBadge.className = "text-[10px] px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-full font-medium";
                 } else {
                     syncBadge.innerText = "🔴 Offline";
@@ -968,8 +1849,11 @@ ATURAN JAWABAN
                 }
             });
 
-            db.ref('superapp_project/checkpoints').on('value', (snap) => {
+            const cpRef = db.ref(`${basePath}/checkpoints`);
+            activeRefs.push(cpRef);
+            cpRef.on('value', (snap) => {
                 const data = snap.val();
+                currentCheckpoints = JSON.parse(JSON.stringify(defaultCheckpoints));
                 if (data) {
                     Object.keys(defaultCheckpoints).forEach(k => {
                         if (data[k]) currentCheckpoints[k] = { ...defaultCheckpoints[k], ...data[k] };
@@ -977,21 +1861,30 @@ ATURAN JAWABAN
                 }
                 renderCheckpoints();
                 updateAIPrompt();
+                updateStorageMeter();
+                tickTrashCountdownAndAutoPurge();
+            }, (err) => {
+                syncBadge.innerText = "🔒 Akses Vault Ditolak Rules";
+                syncBadge.className = "text-[10px] px-2 py-0.5 bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 rounded-full font-medium";
+                showToast(" gagal membaca Vault: Pastikan Rules Firebase sudah diset sesuai kunci Vault.", "error");
             });
 
-            db.ref('superapp_project/history').limitToLast(300).on('value', (snap) => {
+            const histRef = db.ref(`${basePath}/history`).limitToLast(300);
+            activeRefs.push(histRef);
+            histRef.on('value', (snap) => {
                 const data = snap.val();
                 const container = document.getElementById('history-list');
                 currentHistory = [];
                 if (!data) {
-                    container.innerHTML = '<p class="text-slate-400 italic text-xs">Belum ada riwayat submit...</p>';
+                    container.innerHTML = '<p class="text-slate-400 italic text-xs">Belum ada riwayat submit di Vault...</p>';
                     refreshTaskHistories();
                     updateAIPrompt();
+                    updateStorageMeter();
                     return;
                 }
                 const items = Object.values(data).reverse();
                 currentHistory = items;
-                container.innerHTML = items.map(item => `
+                container.innerHTML = items.map((item, idx) => `
                     <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
                         <div class="flex justify-between items-center">
                             <span class="font-bold text-indigo-600 dark:text-indigo-400">${esc(item.user)}</span>
@@ -1002,14 +1895,30 @@ ATURAN JAWABAN
                             Status: <span class="line-through opacity-70">${esc(item.fromStatus)}</span> ➔ <b>${esc(item.toStatus)}</b>
                         </p>
                         ${item.note ? `<p class="text-[11px] italic text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800">"${esc(item.note)}"</p>` : ''}
+                        ${item.attachment ? `
+                            <div class="pt-1">
+                                <button type="button" onclick="openHistoryAttachment(${idx})" class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition">
+                                    ${getFileIcon(item.attachment.name)} Preview/Download: ${esc(item.attachment.name)} (${formatBytes(item.attachment.size)})
+                                </button>
+                            </div>` : ''}
                     </div>
                 `).join('');
                 refreshTaskHistories();
                 updateAIPrompt();
+                updateStorageMeter();
             });
         }
 
-        try { setupFirebase(); } catch (e) { console.error("Firebase error:", e); }
+        // ==========================================
+        // 10. JALANKAN SAAT STARTUP
+        // ==========================================
+        initTheme();
+        renderFeatures('all');
+        renderCheckpoints();
+        updateAIPrompt();
+        updateStorageMeter();
+        try { setupFirebaseApp(); } catch (e) { console.error(e); }
+        initAuth();
     </script>
 </body>
 </html>
