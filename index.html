@@ -90,4 +90,605 @@
                 <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Ganti Tema Terang/Gelap">
                     <span id="theme-icon" class="text-sm">🌙</span>
                 </button>
-                <button onclick="logoutWorkspace()" class="px-2.5 py-1.5 rounded-lg bg-rose
+                <button onclick="logoutWorkspace()" class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition text-xs font-semibold" title="Keluar / Ganti Akun">
+                    🚪 Keluar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- 4. KONTEN UTAMA                            -->
+    <!-- ========================================== -->
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
+
+        <!-- A. BANNER IDENTITAS LOGIN AKTIF & PERAN -->
+        <section class="bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-indigo-900 dark:text-indigo-200">Login Aktif Sebagai:</span>
+                    <span id="active-user-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-600 text-white">-</span>
+                </div>
+                <p id="active-role-desc" class="text-xs text-indigo-700 dark:text-indigo-300 font-medium">-</p>
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-3 py-2 rounded-xl border border-indigo-100 dark:border-slate-800">
+                <div><b>Peran A (Arch & API):</b> Awal</div>
+                <div><b>Peran B (Deck & UI/UX):</b> Naufal</div>
+                <div><b>Peran C (AI & Logic):</b> Eral</div>
+            </div>
+        </section>
+
+        <!-- B. CHECKPOINT ALUR DENGAN DEPENDENCY LOCK (ANTI LONCAT) -->
+        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">1. Alur Tugas Berjenjang (Dependency Lock System)</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tugas yang membutuhkan prasyarat <b>otomatis terkunci 🔒</b> sampai tugas sebelumnya berstatus <b>✅ Sudah</b>.</p>
+                </div>
+                <span id="progress-summary" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 self-start sm:self-center">0/5 Selesai</span>
+            </div>
+
+            <div id="checkpoint-list" class="space-y-4"></div>
+        </section>
+
+        <!-- C. CROSS-AI CONTEXT & PROMPT GENERATOR (DIKEMBALIKAN & DISEMPURNAKAN) -->
+        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">2. Cross-AI Context & Prompt Hub</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Salin prompt di bawah ini ke AI masing-masing (Gemini / ChatGPT / Claude) agar AI langsung tahu progres terbaru tim dari Firebase!</p>
+                </div>
+                <select id="ai-role-filter" onchange="updateAIPrompt()" class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 outline-none">
+                    <option value="AUTO">🎯 Sesuai Login Saya</option>
+                    <option value="ALL">🌐 Master Context (Semua Peran)</option>
+                    <option value="Awal">🏗️ Prompt Khusus Awal (Peran A)</option>
+                    <option value="Naufal">🎨 Prompt Khusus Naufal (Peran B)</option>
+                    <option value="Eral">🧠 Prompt Khusus Eral (Peran C)</option>
+                </select>
+            </div>
+
+            <textarea id="ai-prompt-output" readonly class="w-full h-60 p-3 text-[11px] font-mono rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-800 dark:text-slate-200 outline-none leading-relaxed"></textarea>
+
+            <button onclick="copyAIPrompt()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow transition">
+                📋 Salin Prompt Konteks Terkini untuk AI
+            </button>
+        </section>
+
+        <!-- D. RIWAYAT SUBMIT (HISTORY LOG REALTIME) -->
+        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div>
+                <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">3. Riwayat Submit & Progres Anggota (Realtime Log)</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Rekaman permanen setiap kali Awal, Naufal, atau Eral melakukan submit perubahan tugas.</p>
+            </div>
+
+            <div id="history-list" class="space-y-2 max-h-80 overflow-y-auto pr-1 text-xs">
+                <p class="text-slate-400 italic text-xs">Memuat riwayat dari Firebase...</p>
+            </div>
+        </section>
+
+        <!-- E. BLUEPRINT 10 FITUR SUPER APP -->
+        <section class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">4. Blueprint 10 Fitur Super App (Closed-Loop)</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Ketuk fitur untuk melihat detail arsitektur, nilai bintang, serta pembagian Must-Have & Should-Have.</p>
+                </div>
+                <div class="flex gap-1.5">
+                    <button onclick="renderFeatures('all')" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-medium">Semua (10)</button>
+                    <button onclick="renderFeatures('MUST-HAVE')" class="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-medium">Must-Have</button>
+                    <button onclick="renderFeatures('SHOULD-HAVE')" class="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-medium">Should-Have</button>
+                </div>
+            </div>
+
+            <div id="features-container" class="space-y-2 pt-2"></div>
+        </section>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. SISTEM LOGIN 3 PASSWORD OTOMATIS
+        // ==========================================
+        const ACCOUNTS = {
+            "OnnoKanaeru": {
+                name: "Awal",
+                roleCode: "Peran A",
+                roleTitle: "Peran A — Lead System, API SIAKAD & Security Architecture"
+            },
+            "opung123": {
+                name: "Naufal",
+                roleCode: "Peran B",
+                roleTitle: "Peran B — Product Storyline, Pitch Deck & UI/UX Designer"
+            },
+            "qwertyuiop": {
+                name: "Eral",
+                roleCode: "Peran C",
+                roleTitle: "Peran C — AI Vector Matchmaking, RAG Forum & KRS Marketplace"
+            }
+        };
+
+        let loggedInAccount = null;
+
+        function initAuth() {
+            const savedPass = localStorage.getItem('aenhat_pass_token');
+            if (savedPass && ACCOUNTS[savedPass]) {
+                applyLogin(ACCOUNTS[savedPass]);
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('password-input').value.trim();
+            const err = document.getElementById('auth-error');
+            if (ACCOUNTS[pass]) {
+                localStorage.setItem('aenhat_pass_token', pass);
+                err.classList.add('hidden');
+                applyLogin(ACCOUNTS[pass]);
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        function applyLogin(account) {
+            loggedInAccount = account;
+            document.getElementById('auth-overlay').classList.add('hidden');
+            document.getElementById('header-user-name').innerText = `${account.name} (${account.roleCode})`;
+            document.getElementById('active-user-badge').innerText = `${account.name} (${account.roleCode})`;
+            document.getElementById('active-role-desc').innerText = account.roleTitle;
+            updateAIPrompt();
+        }
+
+        function logoutWorkspace() {
+            localStorage.removeItem('aenhat_pass_token');
+            loggedInAccount = null;
+            document.getElementById('password-input').value = '';
+            document.getElementById('auth-overlay').classList.remove('hidden');
+        }
+
+        function getActiveUser() {
+            return loggedInAccount ? `${loggedInAccount.name} (${loggedInAccount.roleCode})` : "Anggota Tim";
+        }
+
+        // ==========================================
+        // 2. MODAL KONFIRMASI + JEDA 2 DETIK
+        // ==========================================
+        let confirmTimer = null;
+        let pendingConfirmAction = null;
+
+        function openConfirmModal(title, detailsHtml, onConfirmCallback) {
+            const modal = document.getElementById('confirm-modal');
+            const titleEl = document.getElementById('confirm-title');
+            const detailsEl = document.getElementById('confirm-details');
+            const btn = document.getElementById('confirm-action-btn');
+
+            titleEl.innerText = title;
+            detailsEl.innerHTML = detailsHtml;
+            pendingConfirmAction = onConfirmCallback;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            if (confirmTimer) clearInterval(confirmTimer);
+            let secondsLeft = 2;
+            btn.disabled = true;
+            btn.className = "flex-1 py-2.5 px-4 rounded-xl bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-500 font-semibold text-xs cursor-not-allowed transition";
+            btn.innerText = `⏳ Tunggu ${secondsLeft} detik...`;
+
+            confirmTimer = setInterval(() => {
+                secondsLeft -= 1;
+                if (secondsLeft > 0) {
+                    btn.innerText = `⏳ Tunggu ${secondsLeft} detik...`;
+                } else {
+                    clearInterval(confirmTimer);
+                    btn.disabled = false;
+                    btn.className = "flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow transition cursor-pointer";
+                    btn.innerText = "✅ Ya, Submit Sekarang";
+                }
+            }, 1000);
+
+            btn.onclick = () => {
+                if (btn.disabled) return;
+                if (typeof pendingConfirmAction === 'function') {
+                    pendingConfirmAction();
+                }
+                closeConfirmModal();
+            };
+        }
+
+        function closeConfirmModal() {
+            if (confirmTimer) clearInterval(confirmTimer);
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            pendingConfirmAction = null;
+        }
+
+        // ==========================================
+        // 3. KONFIGURASI FIREBASE & DATA DEFAULT
+        // ==========================================
+        const firebaseConfig = {
+            databaseURL: "https://campus-superapp-tracker-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const featuresData = [
+            { id: 1, title: "Zero-Knowledge Grade Proof", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Validasi kriptografi API SIAKAD agar mahasiswa bisa membuktikan klaim seperti 'IPK > 3.5' atau 'Lulus Matkul Jaringan A' tanpa membuka angka transkrip asli." },
+            { id: 2, title: "Dynamic Skill-Tree & Auto-SKPI", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Nilai API kampus dan sertifikat lomba yang disetujui staf otomatis membentuk grafik skill di profil sekaligus merekap poin SKPI kelulusan." },
+            { id: 3, title: "Automated Repo & Portfolio Auditor", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Integrasi GitHub yang memindai repositori mahasiswa untuk memberi lencana validasi keahlian teknis nyata di luar nilai akademik." },
+            { id: 4, title: "Vector-Graph Team Matchmaking", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Pencari rekan tim lomba/proyek berdasarkan kecocokan Skill-Tree yang saling melengkapi dan irisan jam kosong jadwal KRS." },
+            { id: 5, title: "RAG-Powered Verified Academic Forum", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Forum diskusi kuliah di mana jawaban peraih nilai A diprioritaskan di atas, didukung AI RAG yang menjawab dari arsip diskusi kakak tingkat." },
+            { id: 6, title: "Micro-Bounty & Peer Tutoring", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Pertanyaan tugas/debugging yang buntu bisa dipasangi imbalan (bounty) dan menotifikasi peraih nilai A untuk sesi tutor singkat." },
+            { id: 7, title: "Contextual KRS Marketplace", stars: "⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Pasar jual-beli & sewa alat praktikum yang membaca KRS semester baru untuk menawarkan buku/mikrokontroler bekas dari kakak tingkat." },
+            { id: 8, title: "NIM-Bound Smart Escrow", stars: "⭐⭐⭐⭐⭐", priority: "MUST-HAVE", desc: "Rekening bersama & jaminan sewa alat antar mahasiswa yang terikat ke NIM aktif untuk mencegah penipuan internal." },
+            { id: 9, title: "Zero-Touch Lab & Server Provisioning", stars: "⭐⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Peminjaman ruang lab atau container server praktikum yang begitu disetujui satu klik oleh staf langsung menerbitkan akses otomatis." },
+            { id: 10, title: "Instant Talent Radar (Dashboard Dosen)", stars: "⭐⭐⭐⭐", priority: "SHOULD-HAVE", desc: "Panel khusus dosen dan kepala lab untuk merekrut asisten praktikum atau riset dari filter nilai API dan reputasi forum." }
+        ];
+
+        // Definisi Tugas + Prasyarat Dependency (deps)
+        const defaultCheckpoints = {
+            cp1: {
+                num: 1,
+                title: "Tugas 1: Finalisasi Registrasi & Penguncian 3 Peran Tim",
+                owner: "Semua Anggota (Awal, Naufal, Eral)",
+                deps: [],
+                status: "Sudah",
+                note: "Pembagian peran dikunci: Awal (Peran A - Arch/API), Naufal (Peran B - Deck/UI), Eral (Peran C - AI/Logic)."
+            },
+            cp2: {
+                num: 2,
+                title: "Tugas 2: Skema Arsitektur API SIAKAD, ZKP & Closed-Loop",
+                owner: "Awal (Peran A — Architecture)",
+                deps: ["cp1"],
+                status: "Belum",
+                note: "Buat diagram alur data dari API Kampus -> ZKP Grade Proof -> Skill Badge -> Zero-Touch Lab Container."
+            },
+            cp3: {
+                num: 3,
+                title: "Tugas 3: Spesifikasi Logika Vector Matchmaking, RAG Forum & KRS Escrow",
+                owner: "Eral (Peran C — AI & Logic)",
+                deps: ["cp1"],
+                status: "Belum",
+                note: "Rumuskan cara kerja algoritma pencocokan jadwal KRS + skill, alur RAG jawaban nilai A, dan rekomendasi sewa alat."
+            },
+            cp4: {
+                num: 4,
+                title: "Tugas 4: Penyusunan Pitch Deck & Mockup UI/UX (Deadline 10 Nov)",
+                owner: "Naufal (Peran B — Product & UI/UX)",
+                deps: ["cp2", "cp3"],
+                status: "Belum",
+                note: "Gabungkan hasil arsitektur Awal (Tugas 2) dan logika fitur Eral (Tugas 3) ke dalam slide Pitch Deck & desain layar Figma."
+            },
+            cp5: {
+                num: 5,
+                title: "Tugas 5: Eksekusi Prototipe MVP Semifinal (Deadline 30 Nov)",
+                owner: "Semua Anggota (Awal, Naufal, Eral)",
+                deps: ["cp4"],
+                status: "Belum",
+                note: "Koding fitur Must-Have setelah Pitch Deck Preliminary (Tugas 4) selesai disubmit."
+            }
+        };
+
+        let currentCheckpoints = JSON.parse(JSON.stringify(defaultCheckpoints));
+        let currentHistory = [];
+
+        // ==========================================
+        // 4. DARK MODE PREFERENCE
+        // ==========================================
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-icon').innerText = '☀️';
+            }
+        }
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-icon').innerText = isDark ? '☀️' : '🌙';
+        }
+
+        // ==========================================
+        // 5. CEK PRASYARAT DEPENDENCY LOCK
+        // ==========================================
+        function checkTaskLock(key) {
+            const rule = defaultCheckpoints[key];
+            if (!rule.deps || rule.deps.length === 0) {
+                return { locked: false, missingTitles: [] };
+            }
+            const missingTitles = [];
+            rule.deps.forEach(depKey => {
+                const depState = currentCheckpoints[depKey] || defaultCheckpoints[depKey];
+                if (depState.status !== 'Sudah') {
+                    missingTitles.push(`Tugas ${defaultCheckpoints[depKey].num}`);
+                }
+            });
+            return {
+                locked: missingTitles.length > 0,
+                missingTitles: missingTitles
+            };
+        }
+
+        // ==========================================
+        // 6. RENDER CHECKPOINT & FITUR
+        // ==========================================
+        function getStatusColor(status) {
+            switch(status) {
+                case 'Sudah': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 border-emerald-300';
+                case 'Sedang Dikerjakan': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300';
+                case 'Revisi': return 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300 border-rose-300';
+                default: return 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300';
+            }
+        }
+
+        function renderCheckpoints() {
+            const container = document.getElementById('checkpoint-list');
+            container.innerHTML = '';
+            let doneCount = 0;
+
+            Object.keys(defaultCheckpoints).forEach(key => {
+                const base = defaultCheckpoints[key];
+                const cp = currentCheckpoints[key] || base;
+                if (cp.status === 'Sudah') doneCount++;
+
+                const lockInfo = checkTaskLock(key);
+                const isLocked = lockInfo.locked;
+                const badgeColor = getStatusColor(cp.status);
+                const lastBy = cp.updatedBy ? `Terakhir di-submit oleh <b>${cp.updatedBy}</b> (${cp.updatedAt || '-'})` : 'Belum ada submit baru';
+
+                const depBadges = base.deps.length === 0
+                    ? `<span class="text-[10px] px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">Tanpa Prasyarat</span>`
+                    : base.deps.map(d => {
+                        const dStatus = (currentCheckpoints[d] || defaultCheckpoints[d]).status;
+                        const ok = dStatus === 'Sudah';
+                        return `<span class="text-[10px] px-2 py-0.5 rounded font-semibold ${ok ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'}">${ok ? '✅' : '🔒'} Butuh Tugas ${defaultCheckpoints[d].num}</span>`;
+                    }).join(' ');
+
+                container.innerHTML += `
+                    <div class="p-4 rounded-xl border transition ${isLocked ? 'bg-slate-100/70 dark:bg-slate-900/40 border-slate-300 dark:border-slate-800 opacity-75' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800'} space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">${base.owner}</span>
+                                    ${depBadges}
+                                </div>
+                                <h3 class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                                    ${isLocked ? '🔒' : '🔓'} ${base.title}
+                                </h3>
+                            </div>
+
+                            <select id="${key}-status" ${isLocked ? 'disabled' : ''} class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border outline-none ${badgeColor} ${isLocked ? 'cursor-not-allowed opacity-60' : ''}">
+                                <option value="Belum" ${cp.status === 'Belum' ? 'selected' : ''}>⏳ Belum</option>
+                                <option value="Sedang Dikerjakan" ${cp.status === 'Sedang Dikerjakan' ? 'selected' : ''}>🔨 Sedang Dikerjakan</option>
+                                <option value="Sudah" ${cp.status === 'Sudah' ? 'selected' : ''}>✅ Sudah</option>
+                                <option value="Revisi" ${cp.status === 'Revisi' ? 'selected' : ''}>⚠️ Revisi</option>
+                            </select>
+                        </div>
+
+                        ${isLocked ? `
+                            <div class="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/70 text-xs text-rose-700 dark:text-rose-300 font-medium">
+                                🔒 <b>Tugas Terkunci:</b> Tidak dapat diakses atau diubah sebelum <b>${lockInfo.missingTitles.join(' & ')}</b> diselesaikan (berstatus <b>✅ Sudah</b>).
+                            </div>
+                        ` : ''}
+
+                        <div>
+                            <label class="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Keterangan Progres / Hasil Kerja / Link Dokumen:</label>
+                            <textarea id="${key}-note" rows="2" ${isLocked ? 'disabled' : ''} class="w-full text-xs p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 ${isLocked ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-950' : ''}" placeholder="Tulis progres yang sudah dikerjakan atau tempel link dokumen...">${cp.note || ''}</textarea>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400">${lastBy}</span>
+                            ${isLocked ? `
+                                <button disabled class="px-3.5 py-1.5 bg-slate-300 dark:bg-slate-800 text-slate-500 text-xs font-semibold rounded-lg cursor-not-allowed">
+                                    🔒 Selesaikan ${lockInfo.missingTitles.join(' & ')} Dulu
+                                </button>
+                            ` : `
+                                <button onclick="requestSubmitCheckpoint('${key}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+                                    🚀 Submit Update & Catat History
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('progress-summary').innerText = `${doneCount}/5 Selesai`;
+        }
+
+        function renderFeatures(filter = 'all') {
+            const container = document.getElementById('features-container');
+            container.innerHTML = '';
+            featuresData
+                .filter(f => filter === 'all' || f.priority === filter)
+                .forEach(f => {
+                    const badgeClass = f.priority === 'MUST-HAVE'
+                        ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+                        : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300';
+                    container.innerHTML += `
+                        <details class="group bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <summary class="font-semibold text-xs sm:text-sm cursor-pointer flex justify-between items-center gap-2">
+                                <span>${f.id}. ${f.title} <span class="text-[11px] font-normal">${f.stars}</span></span>
+                                <span class="text-[10px] px-2 py-0.5 rounded font-bold shrink-0 ${badgeClass}">${f.priority}</span>
+                            </summary>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 leading-relaxed">
+                                ${f.desc}
+                            </p>
+                        </details>
+                    `;
+                });
+        }
+
+        // ==========================================
+        // 7. SUBMIT CHECKPOINT & FIREBASE LISTENERS
+        // ==========================================
+        const syncBadge = document.getElementById('sync-badge');
+        db.ref('.info/connected').on('value', (snap) => {
+            if (snap.val() === true) {
+                syncBadge.innerText = "🟢 Realtime Sync Aktif";
+                syncBadge.className = "text-[10px] px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-full font-medium";
+            } else {
+                syncBadge.innerText = "🔴 Offline";
+                syncBadge.className = "text-[10px] px-2 py-0.5 bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 rounded-full font-medium";
+            }
+        });
+
+        function formatTimestamp() {
+            const now = new Date();
+            return now.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function requestSubmitCheckpoint(key) {
+            const lockInfo = checkTaskLock(key);
+            if (lockInfo.locked) {
+                alert(`Tugas ini masih terkunci! Selesaikan ${lockInfo.missingTitles.join(' & ')} terlebih dahulu.`);
+                return;
+            }
+
+            const user = getActiveUser();
+            const newStatus = document.getElementById(`${key}-status`).value;
+            const newNote = document.getElementById(`${key}-note`).value.trim();
+            const prevStatus = (currentCheckpoints[key] && currentCheckpoints[key].status) || 'Belum';
+            const title = defaultCheckpoints[key].title;
+
+            const detailsHtml = `
+                <p><b>Disubmit Oleh:</b> ${user}</p>
+                <p><b>Tugas:</b> ${title}</p>
+                <p><b>Perubahan Status:</b> <span class="line-through opacity-70">${prevStatus}</span> ➔ <b>${newStatus}</b></p>
+                <p><b>Keterangan:</b> "${newNote || '-'}"</p>
+            `;
+
+            openConfirmModal("Konfirmasi Update Tugas?", detailsHtml, () => {
+                const timeStr = formatTimestamp();
+                const updatedObj = {
+                    title: title,
+                    owner: defaultCheckpoints[key].owner,
+                    status: newStatus,
+                    note: newNote,
+                    updatedBy: user,
+                    updatedAt: timeStr
+                };
+
+                db.ref(`superapp_project/checkpoints/${key}`).set(updatedObj);
+                db.ref('superapp_project/history').push({
+                    user: user,
+                    taskTitle: title,
+                    fromStatus: prevStatus,
+                    toStatus: newStatus,
+                    note: newNote,
+                    timestamp: timeStr
+                });
+            });
+        }
+
+        db.ref('superapp_project/checkpoints').on('value', (snap) => {
+            const data = snap.val();
+            if (data) {
+                Object.keys(defaultCheckpoints).forEach(k => {
+                    if (data[k]) {
+                        currentCheckpoints[k] = {
+                            ...defaultCheckpoints[k],
+                            ...data[k]
+                        };
+                    }
+                });
+            }
+            renderCheckpoints();
+            updateAIPrompt();
+        });
+
+        db.ref('superapp_project/history').limitToLast(30).on('value', (snap) => {
+            const data = snap.val();
+            const container = document.getElementById('history-list');
+            currentHistory = [];
+            if (!data) {
+                container.innerHTML = '<p class="text-slate-400 italic text-xs">Belum ada riwayat submit...</p>';
+                updateAIPrompt();
+                return;
+            }
+            const items = Object.values(data).reverse();
+            currentHistory = items;
+            container.innerHTML = items.map(item => `
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-indigo-600 dark:text-indigo-400">${item.user}</span>
+                        <span class="text-[10px] text-slate-400">${item.timestamp}</span>
+                    </div>
+                    <p class="font-semibold text-slate-800 dark:text-slate-200">${item.taskTitle}</p>
+                    <p class="text-[11px] text-slate-600 dark:text-slate-300">
+                        Status: <span class="line-through opacity-70">${item.fromStatus}</span> ➔ <b>${item.toStatus}</b>
+                    </p>
+                    ${item.note ? `<p class="text-[11px] italic text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 p-1.5 rounded border border-slate-200 dark:border-slate-800">"${item.note}"</p>` : ''}
+                </div>
+            `).join('');
+            updateAIPrompt();
+        });
+
+        // ==========================================
+        // 8. CROSS-AI PROMPT GENERATOR
+        // ==========================================
+        function updateAIPrompt() {
+            const filterVal = document.getElementById('ai-role-filter').value;
+            let targetPerson = filterVal;
+            if (filterVal === 'AUTO') {
+                targetPerson = loggedInAccount ? loggedInAccount.name : 'ALL';
+            }
+
+            const cpLines = Object.keys(defaultCheckpoints).map(k => {
+                const cp = currentCheckpoints[k] || defaultCheckpoints[k];
+                const lockInfo = checkTaskLock(k);
+                const lockTag = lockInfo.locked ? ` [TERKUNCI: Tunggu ${lockInfo.missingTitles.join(' & ')}]` : '';
+                return `- ${cp.title}: [${cp.status}]${lockTag} (PIC: ${cp.owner} | Update: ${cp.updatedBy || '-'})\n  Catatan: ${cp.note || '-'}`;
+            }).join('\n');
+
+            const recentLogs = currentHistory.slice(0, 5).map(h =>
+                `- [${h.timestamp}] ${h.user} -> ${h.taskTitle} (${h.fromStatus} => ${h.toStatus}): "${h.note || '-'}"`
+            ).join('\n') || '- Belum ada riwayat submit.';
+
+            let roleInstruction = "Bantu koordinasikan seluruh tim berdasarkan status di atas.";
+            if (targetPerson === 'Awal') {
+                roleInstruction = "Saya adalah AWAL (Peran A - Lead System, API SIAKAD, Zero-Knowledge Grade Proof & Zero-Touch Container). Bantu saya menyelesaikan Tugas 2 (Diagram & Spesifikasi Arsitektur Closed-Loop) agar Tugas 4 milik Naufal bisa terbuka!";
+            } else if (targetPerson === 'Naufal') {
+                roleInstruction = "Saya adalah NAUFAL (Peran B - Product, Storyline Pitch Deck & UI/UX Figma). Bantu saya menyusun kerangka slide Pitch Deck Preliminary (Deadline 10 Nov) dan desain layar utama dari data arsitektur Awal (Tugas 2) serta logika fitur Eral (Tugas 3)!";
+            } else if (targetPerson === 'Eral') {
+                roleInstruction = "Saya adalah ERAL (Peran C - AI Vector-Graph Team Matchmaking, RAG Verified Academic Forum & Contextual KRS Escrow Marketplace). Bantu saya menyelesaikan Tugas 3 (Spesifikasi algoritma & alur kerja 3 modul inti saya) secara konkret agar Tugas 4 milik Naufal bisa terbuka!";
+            }
+
+            const promptText = `Halo AI! Kamu adalah kolaborator teknis untuk Tim AENHAT di kompetisi GDGoC ITB Challenge (Case 1: Smarter Campus and Learning).
+Kami merancang "Next-Gen Campus Super App (API-Driven Closed-Loop Trust Ecosystem)" dengan tenggat Preliminary Submission 10 November 2026 dan Semifinal MVP 30 November 2026.
+
+STRUKTUR TIM AENHAT (3 ANGGOTA):
+- Peran A (Architecture, API SIAKAD & Security): Awal
+- Peran B (Product, Pitch Deck & UI/UX): Naufal
+- Peran C (AI Matchmaking, RAG Forum & KRS Marketplace): Eral
+
+STATUS ALUR TUGAS BERJENJANG (REALTIME FIREBASE):
+${cpLines}
+
+5 RIWAYAT SUBMIT TERAKHIR:
+${recentLogs}
+
+INSTRUKSI KHUSUS UNTUKMU:
+${roleInstruction}`;
+
+            const outEl = document.getElementById('ai-prompt-output');
+            if (outEl) outEl.value = promptText;
+        }
+
+        function copyAIPrompt() {
+            const el = document.getElementById('ai-prompt-output');
+            el.select();
+            navigator.clipboard.writeText(el.value);
+            alert("Prompt konteks terkini berhasil disalin! Silakan paste ke AI kamu.");
+        }
+
+        // Inisialisasi
+        initTheme();
+        initAuth();
+        renderFeatures('all');
+        renderCheckpoints();
+        updateAIPrompt();
+    </script>
+</body>
+</html>
