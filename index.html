@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDGoC ITB Super App — AENHAT Workspace</title>
+    <title>GDGoC ITB Super App — Mekara Workspace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' };
@@ -18,7 +18,7 @@
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
             <div class="w-12 h-12 rounded-2xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto text-2xl">🔐</div>
             <div>
-                <h1 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">Portal Tim AENHAT</h1>
+                <h1 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">Portal Tim Mekara</h1>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Masukkan password pribadimu untuk masuk otomatis sesuai identitas & peranmu.</p>
             </div>
             <form onsubmit="handleLogin(event)" class="space-y-3">
@@ -96,7 +96,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                     <h2 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">1. Alur Tugas Berjenjang (Dependency Lock System)</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tugas yang membutuhkan prasyarat <b>otomatis terkunci 🔒</b> sampai tugas sebelumnya berstatus <b>✅ Sudah</b>.</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tugas yang membutuhkan prasyarat <b>otomatis terkunci 🔒</b> sampai tugas sebelumnya berstatus <b>✅ Sudah</b>. Klik <b>Show Info</b> pada tiap tugas untuk tata cara pengerjaannya.</p>
                 </div>
                 <span id="progress-summary" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 self-start sm:self-center">0/5 Selesai</span>
             </div>
@@ -117,7 +117,7 @@
                     <option value="Eral">🧠 Prompt Khusus Eral (Peran C)</option>
                 </select>
             </div>
-            <textarea id="ai-prompt-output" readonly class="w-full h-60 p-3 text-[11px] font-mono rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-800 dark:text-slate-200 outline-none leading-relaxed"></textarea>
+            <textarea id="ai-prompt-output" readonly class="w-full h-80 p-3 text-[11px] font-mono rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-800 dark:text-slate-200 outline-none leading-relaxed"></textarea>
             <button onclick="copyAIPrompt()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow transition">
                 📋 Salin Prompt Konteks Terkini untuk AI
             </button>
@@ -171,6 +171,7 @@
         let currentCheckpoints = {};
         let currentHistory = [];
         let drafts = {};          // isian yang sedang diketik, supaya tidak hilang saat re-render
+        let ui = {};              // status buka/tutup panel info per tugas
         let db = null;
 
         // ==========================================
@@ -183,7 +184,7 @@
         };
 
         function initAuth() {
-            const savedPass = store.get('aenhat_pass_token');
+            const savedPass = store.get('mekara_pass_token');
             if (savedPass && ACCOUNTS[savedPass]) applyLogin(ACCOUNTS[savedPass]);
         }
 
@@ -194,7 +195,7 @@
             if (ACCOUNTS[pass]) {
                 err.style.display = 'none';
                 applyLogin(ACCOUNTS[pass]);          // masuk dulu
-                store.set('aenhat_pass_token', pass); // simpan belakangan
+                store.set('mekara_pass_token', pass); // simpan belakangan
             } else {
                 err.style.display = 'block';
             }
@@ -210,7 +211,7 @@
         }
 
         function logoutWorkspace() {
-            store.remove('aenhat_pass_token');
+            store.remove('mekara_pass_token');
             loggedInAccount = null;
             document.getElementById('password-input').value = '';
             document.getElementById('auth-overlay').style.display = 'flex';
@@ -297,6 +298,92 @@
                    note: "Koding fitur Must-Have setelah Pitch Deck Preliminary (Tugas 4) selesai disubmit." }
         };
 
+        // ==========================================
+        // 3b. TATA CARA PENGERJAAN TIAP TUGAS
+        // ==========================================
+        const taskGuides = {
+            cp1: {
+                goal: "Mengunci pembagian peran dan kesepakatan dasar proyek supaya tidak ada pekerjaan yang tumpang tindih.",
+                output: "Pembagian 3 peran final, kanal komunikasi, dan jadwal sinkronisasi tim.",
+                deadline: "Selesai (✅ Sudah)",
+                steps: [
+                    { t: "Konfirmasi peran masing-masing", d: "Awal = Peran A (Arsitektur, API SIAKAD, Security). Naufal = Peran B (Product, Pitch Deck, UI/UX). Eral = Peran C (AI Matchmaking, RAG Forum, KRS Marketplace). Tiap orang menyebutkan batas tanggung jawabnya agar tidak ada area abu-abu." },
+                    { t: "Sepakati nama tim & konsep", d: "Nama tim Mekara dengan konsep Next-Gen Campus Super App: ekosistem closed-loop berbasis API kampus yang saling menguatkan antar fitur." },
+                    { t: "Tentukan kanal & ritme kerja", d: "Siapkan grup chat, folder dokumen bersama, dan sinkronisasi singkat harian (10–15 menit) untuk saling update blocker." },
+                    { t: "Tetapkan aturan serah-terima", d: "Setiap hasil kerja ditempel sebagai link di kolom Keterangan, lalu status diubah ke Sudah supaya tugas berikutnya otomatis terbuka." }
+                ],
+                deliverables: ["Pembagian peran final", "Folder dokumen bersama", "Jadwal sinkronisasi tim"],
+                doneWhen: ["Ketiga anggota setuju dengan peran dan batas tanggung jawabnya."],
+                tips: ["Kalau ada pekerjaan yang pemiliknya belum jelas, putuskan sekarang, bukan nanti."]
+            },
+            cp2: {
+                goal: "Menghasilkan arsitektur sistem end-to-end yang menunjukkan bagaimana data kampus mengalir menjadi nilai bagi mahasiswa, dosen, dan staf secara aman (closed-loop).",
+                output: "1 diagram arsitektur utama, 1 sequence diagram Zero-Knowledge Grade Proof, dan 1 halaman narasi keamanan.",
+                deadline: "Harus selesai lebih dulu agar Tugas 4 (Naufal) terbuka. Preliminary: 10 Nov 2026.",
+                steps: [
+                    { t: "Petakan sumber data & API SIAKAD", d: "Daftar data yang dibutuhkan: nilai/transkrip, KRS, jadwal, status mahasiswa aktif. Tulis endpoint atau kontrak data yang diasumsikan. Jika belum ada akses resmi, tandai jelas sebagai [MOCK/ASUMSI]." },
+                    { t: "Rancang alur Zero-Knowledge Grade Proof", d: "Jelaskan siapa yang meminta klaim (mis. IPK > 3.5), siapa yang memverifikasi, dan apa yang diterima pihak ketiga. Tekankan bahwa angka transkrip asli tidak pernah dibuka. Gunakan konsep atestasi bertanda tangan atau ZKP, cukup tingkat konsep untuk preliminary." },
+                    { t: "Gambar alur closed-loop", d: "API Kampus → ZKP Grade Proof → Skill Badge / Skill-Tree → Matchmaking, Forum, Marketplace → Zero-Touch Lab Provisioning → data aktivitas kembali memperkaya profil. Beri label di setiap panah: data apa yang lewat." },
+                    { t: "Rancang keamanan & privasi", d: "Autentikasi (SSO kampus), pembagian hak akses (mahasiswa / dosen / staf), enkripsi data, audit log, dan prinsip minimisasi data. Sebut kepatuhan pelindungan data pribadi sebagai pertimbangan." },
+                    { t: "Tentukan batas MVP", d: "Pisahkan mana yang benar-benar dibangun untuk semifinal dan mana yang dimock. Fokus ke fitur Must-Have agar realistis dikerjakan sebelum 30 Nov." },
+                    { t: "Rapikan & serahkan ke Naufal", d: "Ekspor diagram dalam gambar resolusi tinggi dan simpan sumbernya. Tempel link di kolom Keterangan, ubah status ke Sudah, dan kabari Naufal." }
+                ],
+                deliverables: ["Diagram arsitektur closed-loop (gambar + file sumber)", "Sequence diagram ZKP Grade Proof", "Narasi keamanan 1 halaman", "Daftar asumsi API / MOCK"],
+                doneWhen: ["Naufal bisa memasukkan diagram ke slide tanpa bertanya ulang.", "Setiap panah pada diagram punya label data.", "Batas MVP sudah tertulis."],
+                tips: ["Satu diagram yang jelas lebih berharga daripada lima diagram yang ramai.", "Gunakan warna berbeda untuk data sensitif dan data publik."]
+            },
+            cp3: {
+                goal: "Merumuskan logika kerja tiga modul AI & transaksi (Matchmaking, RAG Forum, KRS Marketplace + Escrow) secara konkret agar bisa dipresentasikan dan nanti dikoding.",
+                output: "Spesifikasi 1 halaman per modul (alur, input, output, contoh skenario) beserta contoh data.",
+                deadline: "Harus selesai lebih dulu agar Tugas 4 (Naufal) terbuka. Preliminary: 10 Nov 2026.",
+                steps: [
+                    { t: "Spesifikasi Vector-Graph Team Matchmaking", d: "Definisikan profil vektor mahasiswa: skill beserta levelnya, minat, dan jam kosong dari KRS. Skor kecocokan menggabungkan komplementaritas skill, irisan jadwal, dan reputasi. Buat satu contoh hitungan dengan 3 mahasiswa. Jelaskan penanganan pengguna baru (cold start)." },
+                    { t: "Spesifikasi RAG Verified Academic Forum", d: "Jelaskan sumber arsip diskusi, pemotongan teks (chunking), embedding, dan pengambilan jawaban. Jawaban peraih nilai A (terverifikasi lewat ZKP) diberi bobot lebih tinggi. Jawaban AI wajib menyertakan sumber dan punya fallback ke tanya manusia bila tidak yakin." },
+                    { t: "Spesifikasi Contextual KRS Marketplace", d: "Jelaskan bagaimana KRS semester baru dibaca untuk merekomendasikan buku atau alat praktikum bekas dari kakak tingkat, termasuk logika pencocokan matkul ke barang." },
+                    { t: "Spesifikasi NIM-Bound Smart Escrow", d: "Alur: pembeli membayar, dana ditahan, serah terima dikonfirmasi kedua pihak, dana dilepas. Tulis juga penanganan sengketa dan batas waktu. Semua akun terikat NIM aktif untuk mencegah penipuan." },
+                    { t: "Buat satu skenario pengguna per modul", d: "Tulis cerita singkat dengan data contoh (siapa, melakukan apa, hasilnya apa). Naufal akan memakainya sebagai bahan storyline dan mockup." },
+                    { t: "Tentukan metrik & keterbatasan", d: "Sebutkan cara mengukur keberhasilan tiap modul dan risiko utamanya (bias rekomendasi, halusinasi AI, penyalahgunaan escrow) beserta mitigasinya." },
+                    { t: "Rapikan & serahkan ke Naufal", d: "Tempel link spesifikasi di kolom Keterangan, ubah status ke Sudah, dan kabari Naufal." }
+                ],
+                deliverables: ["Spesifikasi Matchmaking + contoh hitungan", "Spesifikasi RAG Forum + alur retrieval", "Spesifikasi KRS Marketplace & Escrow", "3 skenario pengguna"],
+                doneWhen: ["Tiap modul punya input, proses, output, dan contoh data.", "Naufal bisa membuat mockup tanpa menebak logika."],
+                tips: ["Pakai angka contoh yang nyata supaya juri melihat logikanya bekerja.", "Sebutkan batas kemampuan AI secara jujur, itu menambah kredibilitas."]
+            },
+            cp4: {
+                goal: "Menggabungkan arsitektur (Tugas 2) dan logika fitur (Tugas 3) menjadi cerita yang meyakinkan dalam pitch deck dan mockup UI/UX untuk Preliminary.",
+                output: "Pitch deck (±10–12 slide) dan mockup 3–4 layar utama.",
+                deadline: "Preliminary: 10 Nov 2026.",
+                steps: [
+                    { t: "Baca ulang brief & kriteria penilaian", d: "Pastikan jawaban deck menjawab Case 1: Smarter Campus and Learning. Cek ketentuan resmi (format, ukuran file, tautan pengumpulan) di guidebook GDGoC ITB." },
+                    { t: "Susun alur cerita", d: "Masalah → insight → solusi → bagaimana cara kerjanya → dampak → kelayakan → rencana MVP. Satu slide satu pesan." },
+                    { t: "Rancang kerangka slide", d: "Cover, masalah, bukti/data, solusi, closed-loop (dari Awal), 3 fitur inti, logika AI (dari Eral), mockup UI, dampak & keberlanjutan, roadmap MVP, penutup." },
+                    { t: "Buat mockup layar utama", d: "Minimal: beranda Skill-Tree, matchmaking tim, forum akademik, marketplace/escrow. Pakai skenario pengguna dari Eral sebagai isi layar." },
+                    { t: "Samakan gaya visual", d: "Satu palet warna, satu keluarga font, ikon konsisten. Teks sedikit, visual dominan." },
+                    { t: "Review tim & latihan", d: "Awal mengecek kebenaran teknis, Eral mengecek logika AI. Latihan presentasi singkat jika diperlukan." },
+                    { t: "Submit sebelum tenggat", d: "Unggah sesuai ketentuan resmi, tempel link bukti submit di kolom Keterangan, lalu ubah status ke Sudah." }
+                ],
+                deliverables: ["Pitch deck final (PDF)", "File mockup (Figma) + link", "Bukti submit"],
+                doneWhen: ["Isi deck konsisten dengan arsitektur Awal dan logika Eral.", "Sudah disubmit sebelum tenggat."],
+                tips: ["Waktu sempit? Prioritaskan alur cerita + diagram closed-loop + 3 layar mockup yang matang.", "Tiap slide harus bisa dipahami dalam 5 detik."]
+            },
+            cp5: {
+                goal: "Membangun prototipe MVP yang bisa didemokan, berfokus pada fitur Must-Have dan satu alur closed-loop yang utuh.",
+                output: "Prototipe MVP berjalan + skrip demo.",
+                deadline: "Semifinal MVP: 30 Nov 2026.",
+                steps: [
+                    { t: "Pecah backlog Must-Have", d: "Fitur Must-Have: 1 Zero-Knowledge Grade Proof, 2 Skill-Tree & Auto-SKPI, 4 Team Matchmaking, 5 RAG Forum, 7 KRS Marketplace, 8 Smart Escrow. Urutkan berdasarkan dampak demo dan tingkat kesulitan." },
+                    { t: "Bagi tugas teknis", d: "Usulan: Awal (backend, mock SIAKAD, simulasi ZKP), Eral (layanan AI: matchmaking, RAG, rekomendasi), Naufal (frontend & polesan UI). Sesuaikan dengan kemampuan tim." },
+                    { t: "Siapkan fondasi", d: "Repositori bersama, struktur proyek, data mock SIAKAD, dan kontrak API antara frontend, backend, dan AI." },
+                    { t: "Bangun satu vertical slice", d: "Satu alur penuh dari data kampus sampai manfaat nyata, misalnya: nilai terverifikasi → skill badge → rekomendasi tim → penggunaan di forum/marketplace." },
+                    { t: "Uji & stabilkan", d: "Uji alur demo berulang kali. Siapkan data contoh yang meyakinkan dan rencana cadangan bila koneksi bermasalah." },
+                    { t: "Siapkan demo", d: "Tulis skrip demo, rekam video cadangan, dan latih presentasi." }
+                ],
+                deliverables: ["Repositori / aplikasi yang berjalan", "Skrip demo + video cadangan", "Dokumentasi singkat arsitektur MVP"],
+                doneWhen: ["Satu alur closed-loop bisa didemokan dari awal sampai akhir tanpa error."],
+                tips: ["Lebih baik 3 fitur yang mulus daripada 8 fitur yang setengah jadi.", "Bekukan fitur baru beberapa hari sebelum tenggat."]
+            }
+        };
+
         currentCheckpoints = JSON.parse(JSON.stringify(defaultCheckpoints));
 
         // ==========================================
@@ -344,6 +431,89 @@
         function setDraft(key, field, value) {
             drafts[key] = drafts[key] || {};
             drafts[key][field] = value;
+        }
+
+        // ==========================================
+        // 6a. PANEL TATA CARA (SHOW INFO / SEE DETAILS)
+        // ==========================================
+        function applyGuideState(key) {
+            const st = ui[key] || {};
+            const infoEl = document.getElementById(`${key}-info`);
+            const detEl = document.getElementById(`${key}-detail`);
+            const infoBtn = document.getElementById(`${key}-info-btn`);
+            const detBtn = document.getElementById(`${key}-detail-btn`);
+            if (infoEl) infoEl.style.display = st.info ? 'block' : 'none';
+            if (detEl) detEl.style.display = st.detail ? 'block' : 'none';
+            if (infoBtn) infoBtn.innerText = st.info ? '🔼 Hide Info' : 'ℹ️ Show Info';
+            if (detBtn) detBtn.innerText = st.detail ? '🔼 Hide Details' : '📖 See Details';
+        }
+
+        function toggleInfo(key) {
+            ui[key] = ui[key] || {};
+            ui[key].info = !ui[key].info;
+            if (!ui[key].info) ui[key].detail = false;
+            applyGuideState(key);
+        }
+
+        function toggleDetail(key) {
+            ui[key] = ui[key] || {};
+            ui[key].detail = !ui[key].detail;
+            applyGuideState(key);
+        }
+
+        function renderGuideHtml(key) {
+            const g = taskGuides[key];
+            if (!g) return '';
+            const st = ui[key] || {};
+            const li = (arr) => arr.map(x => `<li>${esc(x)}</li>`).join('');
+
+            const chips = g.steps.map((s, i) =>
+                `<span class="inline-block text-[10px] px-2 py-0.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">${i + 1}. ${esc(s.t)}</span>`
+            ).join(' ');
+
+            const stepsFull = g.steps.map((s, i) => `
+                <li class="flex gap-2.5">
+                    <span class="shrink-0 w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center mt-0.5">${i + 1}</span>
+                    <div>
+                        <p class="font-semibold text-slate-900 dark:text-white">${esc(s.t)}</p>
+                        <p class="text-slate-600 dark:text-slate-300 leading-relaxed">${esc(s.d)}</p>
+                    </div>
+                </li>`).join('');
+
+            return `
+                <div class="space-y-2">
+                    <button type="button" id="${key}-info-btn" onclick="toggleInfo('${key}')" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">${st.info ? '🔼 Hide Info' : 'ℹ️ Show Info'}</button>
+
+                    <div id="${key}-info" style="display:${st.info ? 'block' : 'none'}" class="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60 text-xs space-y-2">
+                        <p><b class="text-indigo-700 dark:text-indigo-300">🎯 Tujuan:</b> <span class="text-slate-700 dark:text-slate-300">${esc(g.goal)}</span></p>
+                        <p><b class="text-indigo-700 dark:text-indigo-300">📦 Output:</b> <span class="text-slate-700 dark:text-slate-300">${esc(g.output)}</span></p>
+                        <p><b class="text-indigo-700 dark:text-indigo-300">⏰ Tenggat:</b> <span class="text-slate-700 dark:text-slate-300">${esc(g.deadline)}</span></p>
+                        <div>
+                            <b class="text-indigo-700 dark:text-indigo-300">🧭 Ringkasan langkah:</b>
+                            <div class="flex flex-wrap gap-1 mt-1">${chips}</div>
+                        </div>
+                        <button type="button" id="${key}-detail-btn" onclick="toggleDetail('${key}')" class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition">${st.detail ? '🔼 Hide Details' : '📖 See Details'}</button>
+
+                        <div id="${key}-detail" style="display:${st.detail ? 'block' : 'none'}" class="pt-3 mt-1 border-t border-indigo-200 dark:border-indigo-900 space-y-3">
+                            <div>
+                                <p class="font-bold text-slate-900 dark:text-white mb-2">📋 Tata Cara Pengerjaan (urut)</p>
+                                <ol class="space-y-2.5">${stepsFull}</ol>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-900 dark:text-white mb-1">📦 Deliverable</p>
+                                <ul class="list-disc pl-5 space-y-0.5 text-slate-700 dark:text-slate-300">${li(g.deliverables)}</ul>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-900 dark:text-white mb-1">✅ Dianggap Selesai Jika</p>
+                                <ul class="list-disc pl-5 space-y-0.5 text-slate-700 dark:text-slate-300">${li(g.doneWhen)}</ul>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-900 dark:text-white mb-1">💡 Tips</p>
+                                <ul class="list-disc pl-5 space-y-0.5 text-slate-700 dark:text-slate-300">${li(g.tips)}</ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
         }
 
         function renderCheckpoints() {
@@ -405,6 +575,8 @@
                             <label class="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Keterangan Progres / Hasil Kerja / Link Dokumen:</label>
                             <textarea id="${key}-note" rows="2" ${isLocked ? 'disabled' : ''} oninput="setDraft('${key}','note',this.value)" class="w-full text-xs p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 ${isLocked ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-950' : ''}" placeholder="Tulis progres yang sudah dikerjakan atau tempel link dokumen...">${esc(shownNote)}</textarea>
                         </div>
+
+                        ${renderGuideHtml(key)}
 
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
                             <span class="text-[10px] text-slate-500 dark:text-slate-400">${lastBy}</span>
@@ -499,6 +671,49 @@
         // ==========================================
         // 8. CROSS-AI PROMPT GENERATOR
         // ==========================================
+        function daysUntil(y, m, d) {
+            const now = new Date();
+            const t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const t1 = new Date(y, m - 1, d);
+            return Math.round((t1 - t0) / 86400000);
+        }
+
+        function dayLabel(n, name) {
+            if (n > 0) return `${n} hari lagi menuju ${name}`;
+            if (n === 0) return `${name} adalah HARI INI`;
+            return `${name} sudah lewat ${Math.abs(n)} hari`;
+        }
+
+        const FOCUS_TASK = { Awal: 'cp2', Naufal: 'cp4', Eral: 'cp3' };
+
+        function formatGuideFull(key) {
+            const g = taskGuides[key];
+            const title = defaultCheckpoints[key].title;
+            if (!g) return title;
+            return [
+                `TATA CARA TUGAS FOKUS: ${title}`,
+                `Tujuan: ${g.goal}`,
+                `Output: ${g.output}`,
+                `Tenggat: ${g.deadline}`,
+                `Langkah:`,
+                g.steps.map((s, i) => `${i + 1}. ${s.t} — ${s.d}`).join('\n'),
+                `Deliverable:`,
+                g.deliverables.map(x => `- ${x}`).join('\n'),
+                `Dianggap selesai jika:`,
+                g.doneWhen.map(x => `- ${x}`).join('\n'),
+                `Tips:`,
+                g.tips.map(x => `- ${x}`).join('\n')
+            ].join('\n');
+        }
+
+        function formatGuideOverview() {
+            return Object.keys(defaultCheckpoints).map(k => {
+                const g = taskGuides[k];
+                const steps = g ? g.steps.map((s, i) => `   ${i + 1}) ${s.t}`).join('\n') : '';
+                return `${defaultCheckpoints[k].title}\n   Output: ${g ? g.output : '-'}\n${steps}`;
+            }).join('\n\n');
+        }
+
         function updateAIPrompt() {
             const outEl = document.getElementById('ai-prompt-output');
             if (!outEl) return;
@@ -507,42 +722,76 @@
             let targetPerson = filterVal;
             if (filterVal === 'AUTO') targetPerson = loggedInAccount ? loggedInAccount.name : 'ALL';
 
+            const todayStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const countdown = `${dayLabel(daysUntil(2026, 11, 10), 'Preliminary Submission (10 Nov 2026)')}; ${dayLabel(daysUntil(2026, 11, 30), 'Semifinal MVP (30 Nov 2026)')}`;
+
+            const featureLines = featuresData
+                .map(f => `${f.id}. ${f.title} [${f.priority}] — ${f.desc}`)
+                .join('\n');
+
             const cpLines = Object.keys(defaultCheckpoints).map(k => {
                 const cp = currentCheckpoints[k] || defaultCheckpoints[k];
                 const lockInfo = checkTaskLock(k);
-                const lockTag = lockInfo.locked ? ` [TERKUNCI: Tunggu ${lockInfo.missingTitles.join(' & ')}]` : '';
-                return `- ${cp.title}: [${cp.status}]${lockTag} (PIC: ${cp.owner} | Update: ${cp.updatedBy || '-'})\n  Catatan: ${cp.note || '-'}`;
+                const lockTag = lockInfo.locked ? ` [TERKUNCI: menunggu ${lockInfo.missingTitles.join(' & ')}]` : '';
+                return `- ${cp.title}: [${cp.status}]${lockTag} (PIC: ${cp.owner} | Update terakhir: ${cp.updatedBy || '-'} ${cp.updatedAt || ''})\n  Catatan: ${cp.note || '-'}`;
             }).join('\n');
 
             const recentLogs = currentHistory.slice(0, 5).map(h =>
                 `- [${h.timestamp}] ${h.user} -> ${h.taskTitle} (${h.fromStatus} => ${h.toStatus}): "${h.note || '-'}"`
             ).join('\n') || '- Belum ada riwayat submit.';
 
-            let roleInstruction = "Bantu koordinasikan seluruh tim berdasarkan status di atas.";
+            const focusKey = FOCUS_TASK[targetPerson];
+            let roleInstruction = "Saya ingin mengoordinasikan seluruh tim. Berdasarkan status tugas di atas, tunjukkan tugas mana yang menjadi bottleneck, siapa yang harus bergerak lebih dulu, dan langkah konkret berikutnya untuk tiap anggota.";
             if (targetPerson === 'Awal') {
-                roleInstruction = "Saya adalah AWAL (Peran A - Lead System, API SIAKAD, Zero-Knowledge Grade Proof & Zero-Touch Container). Bantu saya menyelesaikan Tugas 2 (Diagram & Spesifikasi Arsitektur Closed-Loop) agar Tugas 4 milik Naufal bisa terbuka!";
+                roleInstruction = "Saya adalah AWAL (Peran A: Lead System, API SIAKAD, Zero-Knowledge Grade Proof & Zero-Touch Container). Bantu saya menyelesaikan Tugas 2 (arsitektur closed-loop) agar Tugas 4 milik Naufal bisa terbuka.";
             } else if (targetPerson === 'Naufal') {
-                roleInstruction = "Saya adalah NAUFAL (Peran B - Product, Storyline Pitch Deck & UI/UX Figma). Bantu saya menyusun kerangka slide Pitch Deck Preliminary (Deadline 10 Nov) dan desain layar utama dari data arsitektur Awal (Tugas 2) serta logika fitur Eral (Tugas 3)!";
+                roleInstruction = "Saya adalah NAUFAL (Peran B: Product, Storyline Pitch Deck & UI/UX Figma). Bantu saya mengerjakan Tugas 4 (kerangka pitch deck dan mockup) dengan memanfaatkan hasil Tugas 2 (Awal) dan Tugas 3 (Eral).";
             } else if (targetPerson === 'Eral') {
-                roleInstruction = "Saya adalah ERAL (Peran C - AI Vector-Graph Team Matchmaking, RAG Verified Academic Forum & Contextual KRS Escrow Marketplace). Bantu saya menyelesaikan Tugas 3 (Spesifikasi algoritma & alur kerja 3 modul inti saya) secara konkret agar Tugas 4 milik Naufal bisa terbuka!";
+                roleInstruction = "Saya adalah ERAL (Peran C: AI Vector-Graph Matchmaking, RAG Verified Academic Forum & Contextual KRS Escrow Marketplace). Bantu saya menyelesaikan Tugas 3 (spesifikasi algoritma dan alur 3 modul inti) agar Tugas 4 milik Naufal bisa terbuka.";
             }
 
-            outEl.value = `Halo AI! Kamu adalah kolaborator teknis untuk Tim AENHAT di kompetisi GDGoC ITB Challenge (Case 1: Smarter Campus and Learning).
-Kami merancang "Next-Gen Campus Super App (API-Driven Closed-Loop Trust Ecosystem)" dengan tenggat Preliminary Submission 10 November 2026 dan Semifinal MVP 30 November 2026.
+            let lockNote = '';
+            if (focusKey && checkTaskLock(focusKey).locked) {
+                lockNote = `\nCATATAN KUNCI: Tugas fokus ini masih TERKUNCI (menunggu ${checkTaskLock(focusKey).missingTitles.join(' & ')}). Bantu saya menyiapkan kerangka atau draft awal saja, dan jangan menyatakan tugas ini selesai.`;
+            }
 
-STRUKTUR TIM AENHAT (3 ANGGOTA):
+            const guideBlock = focusKey ? formatGuideFull(focusKey) : `RINGKASAN TATA CARA SEMUA TUGAS:\n${formatGuideOverview()}`;
+
+            outEl.value = `PERANMU
+Kamu adalah kolaborator teknis dan strategis untuk Tim Mekara di kompetisi GDGoC ITB Challenge (Case 1: Smarter Campus and Learning).
+
+HARI INI: ${todayStr}
+TENGGAT: ${countdown}
+
+KONTEKS PROYEK
+Kami merancang "Next-Gen Campus Super App": ekosistem closed-loop berbasis API kampus (SIAKAD) yang membangun kepercayaan lewat bukti terverifikasi tanpa membuka data mentah.
+
+STRUKTUR TIM MEKARA (3 ANGGOTA)
 - Peran A (Architecture, API SIAKAD & Security): Awal
 - Peran B (Product, Pitch Deck & UI/UX): Naufal
 - Peran C (AI Matchmaking, RAG Forum & KRS Marketplace): Eral
 
-STATUS ALUR TUGAS BERJENJANG (REALTIME FIREBASE):
+BLUEPRINT 10 FITUR
+${featureLines}
+
+STATUS ALUR TUGAS BERJENJANG (REALTIME FIREBASE)
 ${cpLines}
 
-5 RIWAYAT SUBMIT TERAKHIR:
+5 RIWAYAT SUBMIT TERAKHIR
 ${recentLogs}
 
-INSTRUKSI KHUSUS UNTUKMU:
-${roleInstruction}`;
+${guideBlock}
+
+INSTRUKSI KHUSUS UNTUKMU
+${roleInstruction}${lockNote}
+
+ATURAN JAWABAN
+- Jawab dalam Bahasa Indonesia, ringkas, konkret, dan siap dipakai (bukan teori umum).
+- Ikuti urutan langkah pada tata cara; kerjakan satu langkah per balasan kecuali saya minta lain.
+- Jika data kurang, buat asumsi eksplisit dengan tanda [ASUMSI] atau ajukan maksimal 3 pertanyaan.
+- Jangan mengarang detail API SIAKAD ITB; tandai [MOCK/ASUMSI] bila belum ada akses resmi.
+- Hormati dependency lock: jangan menyuruh mengerjakan tugas yang masih terkunci sebagai tugas utama.
+- Akhiri dengan blok "UNTUK DITEMPEL KE KETERANGAN PROGRES" berisi ringkasan 2–3 baris hasil kerja.`;
         }
 
         function copyAIPrompt() {
